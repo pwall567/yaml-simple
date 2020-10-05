@@ -9,6 +9,7 @@
     <name>YAML Simple</name>
     <packaging>jar</packaging>
     <description>Simple implementation of YAML</description>
+    <url>https://github.com/pwall567/yaml-simple</url>
 
     <parent>
         <groupId>net.pwall.maven</groupId>
