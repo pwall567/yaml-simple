@@ -41,7 +41,7 @@ Not yet implemented, but in the development pipeline:
 Further down the track:
 
 - Anchors and Aliases
-- The "?" amd ":" syntax for Block Mapping entries
+- The "?" and ":" syntax for Block Mapping entries
 - Directives
 - Tags
 
