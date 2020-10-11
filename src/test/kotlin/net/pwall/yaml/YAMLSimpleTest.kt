@@ -161,6 +161,71 @@ class YAMLSimpleTest {
         expect("hello\nworld\n") { ((result.rootNode as? YAMLMapping)?.get("abc") as? YAMLString)?.get() }
     }
 
+    @Test fun `should process flow sequence`() {
+        val file = File("src/test/resources/flowsequence.yaml")
+        val result = YAMLSimple.process(file)
+        log.info { result.rootNode?.toJSON() }
+        (result.rootNode as? YAMLSequence)?.let {
+            expect(2) { it.size }
+            expect("abc") { (it[0] as? YAMLString)?.get() }
+            expect("def") { (it[1] as? YAMLString)?.get() }
+        } ?: fail("Outer block not a sequence")
+    }
+
+    @Test fun `should process more complex flow sequence`() {
+        val file = File("src/test/resources/flowsequence2.yaml")
+        val result = YAMLSimple.process(file)
+        log.info { result.rootNode?.toJSON() }
+        (result.rootNode as? YAMLSequence)?.let {
+            expect(3) { it.size }
+            expect("abc def") { (it[0] as? YAMLString)?.get() }
+            expect("ghi") { (it[1] as? YAMLString)?.get() }
+            expect("jkl") { (it[2] as? YAMLString)?.get() }
+        } ?: fail("Outer block not a sequence")
+    }
+
+    @Test fun `should process flow sequence of mappings`() {
+        val file = File("src/test/resources/flowsequence3.yaml")
+        val result = YAMLSimple.process(file)
+        log.info { result.rootNode?.toJSON() }
+        (result.rootNode as? YAMLSequence)?.let { sequence ->
+            expect(3) { sequence.size }
+            (sequence[0] as? YAMLMapping)?.let {
+                expect(1) { it.size }
+                expect(123) { (it["abc"] as? YAMLInt)?.get() }
+            }
+            (sequence[1] as? YAMLMapping)?.let {
+                expect(1) { it.size }
+                expect(456) { (it["abc"] as? YAMLInt)?.get() }
+            }
+            (sequence[2] as? YAMLMapping)?.let {
+                expect(1) { it.size }
+                expect(789) { (it["def"] as? YAMLInt)?.get() }
+            }
+        } ?: fail("Outer block not a sequence")
+    }
+
+    @Test fun `should process nested flow sequences`() {
+        val file = File("src/test/resources/flowsequence4.yaml")
+        val result = YAMLSimple.process(file)
+        log.info { result.rootNode?.toJSON() }
+        (result.rootNode as? YAMLSequence)?.let { sequence ->
+            expect(3) { sequence.size }
+            (sequence[0] as? YAMLSequence)?.let {
+                expect(1) { it.size }
+                expect("abc") { (it[0] as? YAMLString)?.get() }
+            }
+            (sequence[1] as? YAMLSequence)?.let {
+                expect(2) { it.size }
+                expect("def") { (it[0] as? YAMLString)?.get() }
+                expect(888) { (it[1] as? YAMLInt)?.get() }
+            }
+            (sequence[2] as? YAMLSequence)?.let {
+                expect(0) { it.size }
+            }
+        } ?: fail("Outer block not a sequence")
+    }
+
     @Test fun `should process example JSON schema`() {
         val file = File("src/test/resources/example.schema.yaml")
         val result = YAMLSimple.process(file)

@@ -24,18 +24,18 @@ For example, to retrieve the `description` property of the `info` entry of a Swa
 
 ## Implemented Subset
 
-This library does not implement the full [YAML specification](https://yaml.org/spec/1.2/spec.html).
+This parser does not implement the full [YAML specification](https://yaml.org/spec/1.2/spec.html).
 The currently implemented subset includes:
 
 - Block Mappings
 - Block Sequences
 - Block Scalars (literal and folded)
 - Flow Scalars (plain, single quoted and double quoted)
+- Flow Sequences
 - Comments
 
 Not yet implemented, but in the development pipeline:
 
-- Flow Sequences
 - Flow Mappings
 
 Further down the track:
@@ -44,6 +44,8 @@ Further down the track:
 - The "?" and ":" syntax for Block Mapping entries
 - Directives
 - Tags
+
+Also, the parser may not meet the specification in all respects, even for the constructs that it does handle.
 
 ## Dependency Specification
 

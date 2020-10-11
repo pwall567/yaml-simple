@@ -35,7 +35,7 @@ import net.pwall.log.Logger
 import net.pwall.log.LoggerFactory
 import net.pwall.util.ListMap
 import net.pwall.util.ParseText
-import net.pwall.yaml.parser.NumberedParseText
+import net.pwall.yaml.parser.Line
 
 /**
  * A simple YAML processor.
@@ -65,42 +65,42 @@ object YAMLSimple {
         var lineNumber = 0
         while (true) {
             ++lineNumber
-            val line = brdr.readLine() ?: break
+            val text = brdr.readLine() ?: break
             when (state) {
                 State.INITIAL -> {
                     when {
-                        line.startsWith("%YAML") -> warn("%YAML directive ignored - $line")
-                        line.startsWith('%') -> warn("Unrecognised directive ignored - $line")
-                        line.startsWith("---") -> state = State.MAIN
-                        line.startsWith("...") -> state = State.CLOSED
+                        text.startsWith("%YAML") -> warn("%YAML directive ignored - $text")
+                        text.startsWith('%') -> warn("Unrecognised directive ignored - $text")
+                        text.startsWith("---") -> state = State.MAIN
+                        text.startsWith("...") -> state = State.CLOSED
                         else -> {
-                            val npt = NumberedParseText(lineNumber, line)
-                            if (!npt.atEnd()) {
+                            val line = Line(lineNumber, text)
+                            if (!line.atEnd()) {
                                 state = State.MAIN
-                                outerBlock.processLine(npt)
+                                outerBlock.processLine(line)
                             }
                         }
                     }
                 }
                 State.MAIN -> {
                     when {
-                        line.startsWith("...") -> state = State.CLOSED
+                        text.startsWith("...") -> state = State.CLOSED
                         else -> {
-                            val npt = NumberedParseText(lineNumber, line)
-                            if (npt.isExhausted)
-                                outerBlock.processBlankLine(npt)
+                            val line = Line(lineNumber, text)
+                            if (line.isExhausted)
+                                outerBlock.processBlankLine(line)
                             else
-                                outerBlock.processLine(npt)
+                                outerBlock.processLine(line)
                         }
                     }
                 }
                 State.CLOSED -> {
-                    if (line.trim().isNotEmpty())
-                        fatal("Non-blank lines after close", NumberedParseText(lineNumber, ""))
+                    if (text.trim().isNotEmpty())
+                        fatal("Non-blank lines after close", Line(lineNumber, ""))
                 }
             }
         }
-        val rootNode = outerBlock.conclude(NumberedParseText(lineNumber, ""))
+        val rootNode = outerBlock.conclude(Line(lineNumber, ""))
         log.debug {
             val type = when (rootNode) {
                 null -> "null"
@@ -115,24 +115,24 @@ object YAMLSimple {
         log.warn { "YAML Warning: $message" }
     }
 
-    private fun fatal(message: String, npt: NumberedParseText): Nothing {
-        val exception = YAMLException(message, npt)
+    private fun fatal(message: String, line: Line): Nothing {
+        val exception = YAMLException(message, line)
         log.error { exception.message }
         throw exception
     }
 
-    fun NumberedParseText.processPlainScalar(initial: String = ""): PlainScalar {
+    fun Line.processPlainScalar(initial: String = ""): PlainScalar {
         val sb = StringBuilder(initial)
         while (!isExhausted) {
             when {
                 matchColon() -> {
                     revert()
-                    skipBackSpaces()
+                    skipBackSpaces() // ???
                     break
                 }
                 matchHash() -> {
                     revert()
-                    skipBackSpaces()
+                    skipBackSpaces() // ???
                     break
                 }
                 else -> sb.append(char)
@@ -141,7 +141,31 @@ object YAMLSimple {
         return PlainScalar(sb.toString().trim())
     }
 
-    fun NumberedParseText.processSingleQuotedScalar(initial: String = ""): SingleQuotedScalar {
+    fun Line.processFlowNode(initial: String = ""): FlowNode {
+        val sb = StringBuilder(initial)
+        while (!isExhausted) {
+            when {
+                matchAnyOf("[]{},") -> {
+                    revert()
+                    return FlowNode(sb.toString().trim()).also { it.terminated = true }
+                }
+                matchColon() -> {
+                    revert()
+                    skipBackSpaces() // ???
+                    break
+                }
+                matchHash() -> {
+                    revert()
+                    skipBackSpaces() // ???
+                    break
+                }
+                else -> sb.append(char)
+            }
+        }
+        return FlowNode(sb.toString().trim())
+    }
+
+    fun Line.processSingleQuotedScalar(initial: String = ""): SingleQuotedScalar {
         val sb = StringBuilder(initial)
         while (!isExhausted) {
             when {
@@ -157,7 +181,7 @@ object YAMLSimple {
         return SingleQuotedScalar(sb.toString(), false)
     }
 
-    fun NumberedParseText.processDoubleQuotedScalar(initial: String = ""): DoubleQuotedScalar {
+    fun Line.processDoubleQuotedScalar(initial: String = ""): DoubleQuotedScalar {
         val sb = StringBuilder(initial)
         while (!isExhausted) {
             when {
@@ -169,7 +193,7 @@ object YAMLSimple {
         return DoubleQuotedScalar(sb.toString(), false)
     }
 
-    private fun NumberedParseText.processBackslash(sb: StringBuilder) {
+    private fun Line.processBackslash(sb: StringBuilder) {
         when {
             match('0') -> sb.append('\u0000')
             match('a') -> sb.append('\u0007')
@@ -203,16 +227,16 @@ object YAMLSimple {
     }
 
     abstract class Block(val indent: Int) {
-        abstract fun processLine(npt: NumberedParseText)
-        open fun processBlankLine(npt: NumberedParseText) {}
-        abstract fun conclude(npt: NumberedParseText): YAMLNode?
+        abstract fun processLine(line: Line)
+        open fun processBlankLine(line: Line) {}
+        abstract fun conclude(line: Line): YAMLNode?
     }
 
     object ErrorBlock : Block(0) {
 
-        override fun processLine(npt: NumberedParseText) = fatal("Should not happen", npt)
+        override fun processLine(line: Line) = fatal("Should not happen", line)
 
-        override fun conclude(npt: NumberedParseText): YAMLNode? = fatal("Should not happen", npt)
+        override fun conclude(line: Line): YAMLNode? = fatal("Should not happen", line)
 
     }
 
@@ -224,38 +248,43 @@ object YAMLSimple {
         private var node: YAMLNode? = null
         private var child: Block = ErrorBlock
 
-        override fun processLine(npt: NumberedParseText) {
+        override fun processLine(line: Line) {
             when (state) {
-                State.INITIAL -> processFirstLine(npt)
-                State.CHILD -> child.processLine(npt)
-                State.CLOSED -> fatal("Unexpected state in YAML processing", npt)
+                State.INITIAL -> processFirstLine(line)
+                State.CHILD -> child.processLine(line)
+                State.CLOSED -> fatal("Unexpected state in YAML processing", line)
             }
         }
 
-        private fun processFirstLine(npt: NumberedParseText) {
-            val initialIndex = npt.index
+        private fun processFirstLine(line: Line) {
+            val initialIndex = line.index
             val scalar = when {
-                npt.atEnd() -> return
-                npt.matchDash() -> {
-                    child = if (npt.isExhausted || npt.matchHash())
+                line.atEnd() -> return
+                line.matchDash() -> {
+                    child = if (line.isExhausted || line.matchHash())
                         SequenceBlock(initialIndex)
                     else
-                        SequenceBlock(initialIndex, npt)
+                        SequenceBlock(initialIndex, line)
                     state = State.CHILD
                     return
                 }
-                npt.match('"') -> npt.processDoubleQuotedScalar()
-                npt.match('\'') -> npt.processSingleQuotedScalar()
-                else -> npt.processPlainScalar()
+                line.match('"') -> line.processDoubleQuotedScalar()
+                line.match('\'') -> line.processSingleQuotedScalar()
+                line.match('[') -> {
+                    FlowSequence(false).also {
+                        it.continuation(line)
+                    }
+                }
+                else -> line.processPlainScalar()
             }
-            npt.skipSpaces()
-            if (npt.matchColon()) {
-                if (npt.atEnd()) {
-                    child = MappingBlock(initialIndex, scalar.text)
+            line.skipSpaces()
+            if (line.matchColon()) {
+                if (line.atEnd()) {
+                    child = MappingBlock(initialIndex, scalar.text.toString())
                     state = State.CHILD
                 }
                 else {
-                    child = MappingBlock(initialIndex, scalar.text, npt)
+                    child = MappingBlock(initialIndex, scalar.text.toString(), line)
                     state = State.CHILD
                 }
             }
@@ -271,18 +300,18 @@ object YAMLSimple {
             }
         }
 
-        override fun processBlankLine(npt: NumberedParseText) {
+        override fun processBlankLine(line: Line) {
             when (state) {
                 State.INITIAL -> {}
-                State.CHILD -> child.processBlankLine(npt)
+                State.CHILD -> child.processBlankLine(line)
                 State.CLOSED -> {}
             }
         }
 
-        override fun conclude(npt: NumberedParseText): YAMLNode? {
+        override fun conclude(line: Line): YAMLNode? {
             when (state) {
                 State.INITIAL -> {}
-                State.CHILD -> node = child.conclude(npt)
+                State.CHILD -> node = child.conclude(line)
                 State.CLOSED -> {}
             }
             state = State.CLOSED
@@ -305,73 +334,73 @@ object YAMLSimple {
             child = InitialBlock(indent + 1)
         }
 
-        constructor(indent: Int, key: String, npt: NumberedParseText) : this(indent) {
+        constructor(indent: Int, key: String, line: Line) : this(indent) {
             this.key = key
             child = ChildBlock(indent + 1)
-            child.processLine(npt)
+            child.processLine(line)
         }
 
-        override fun processLine(npt: NumberedParseText) {
-            var effectiveIndent = npt.index
-            if (npt.matchDash()) {
-                effectiveIndent = npt.index
-                npt.revert()
+        override fun processLine(line: Line) {
+            var effectiveIndent = line.index
+            if (line.matchDash()) {
+                effectiveIndent = line.index
+                line.revert()
             }
             when (state) {
-                State.KEY -> processKey(npt)
+                State.KEY -> processKey(line)
                 State.CHILD -> {
                     if (effectiveIndent >= child.indent)
-                        child.processLine(npt)
+                        child.processLine(line)
                     else {
-                        properties[key] = child.conclude(npt)
+                        properties[key] = child.conclude(line)
                         state = State.KEY
-                        processKey(npt)
+                        processKey(line)
                     }
                 }
-                State.CLOSED -> fatal("Unexpected state in YAML processing", npt)
+                State.CLOSED -> fatal("Unexpected state in YAML processing", line)
             }
         }
 
-        override fun processBlankLine(npt: NumberedParseText) {
+        override fun processBlankLine(line: Line) {
             when (state) {
                 State.KEY -> {}
-                State.CHILD -> child.processBlankLine(npt)
+                State.CHILD -> child.processBlankLine(line)
                 State.CLOSED -> {}
             }
         }
 
-        private fun processKey(npt: NumberedParseText) {
+        private fun processKey(line: Line) {
             val scalar = when {
-                npt.isExhausted -> return
-                npt.match('#') -> return
-                npt.match('"') -> npt.processDoubleQuotedScalar()
-                npt.match('\'') -> npt.processSingleQuotedScalar()
-                else -> npt.processPlainScalar()
+                line.isExhausted -> return
+                line.match('#') -> return
+                line.match('"') -> line.processDoubleQuotedScalar()
+                line.match('\'') -> line.processSingleQuotedScalar()
+                else -> line.processPlainScalar()
             }
-            npt.skipSpaces()
-            if (npt.matchColon()) {
+            line.skipSpaces()
+            if (line.matchColon()) {
                 key = scalar.text
                 if (properties.containsKey(key))
-                    fatal("Duplicate key in mapping - $key", npt)
-                npt.skipSpaces()
-                if (npt.isExhausted || npt.matchHash()) {
+                    fatal("Duplicate key in mapping - $key", line)
+                line.skipSpaces()
+                if (line.isExhausted || line.matchHash()) {
                     child = InitialBlock(indent + 1)
                     state = State.CHILD
                 }
                 else {
                     child = ChildBlock(indent + 1)
-                    child.processLine(npt)
+                    child.processLine(line)
                     state = State.CHILD
                 }
             }
             else
-                fatal("Illegal key in mapping", npt)
+                fatal("Illegal key in mapping", line)
         }
 
-        override fun conclude(npt: NumberedParseText): YAMLNode? {
+        override fun conclude(line: Line): YAMLNode? {
             when (state) {
                 State.KEY -> {}
-                State.CHILD -> properties[key] = child.conclude(npt)
+                State.CHILD -> properties[key] = child.conclude(line)
                 State.CLOSED -> {}
             }
             state = State.CLOSED
@@ -388,55 +417,55 @@ object YAMLSimple {
         private val items = mutableListOf<YAMLNode?>()
         private var child: Block = ErrorBlock
 
-        constructor(indent: Int, npt: NumberedParseText) : this(indent) {
+        constructor(indent: Int, line: Line) : this(indent) {
             child = InitialBlock(indent + 2)
-            child.processLine(npt)
+            child.processLine(line)
             state = State.CHILD
         }
 
-        override fun processLine(npt: NumberedParseText) {
+        override fun processLine(line: Line) {
             when (state) {
-                State.DASH -> processDash(npt)
+                State.DASH -> processDash(line)
                 State.CHILD -> {
-                    if (npt.index >= child.indent)
-                        child.processLine(npt)
+                    if (line.index >= child.indent)
+                        child.processLine(line)
                     else {
-                        val childValue = child.conclude(npt)
+                        val childValue = child.conclude(line)
                         items.add(childValue)
                         state = State.DASH
-                        processDash(npt)
+                        processDash(line)
                     }
                 }
-                State.CLOSED -> fatal("Unexpected state in YAML processing", npt)
+                State.CLOSED -> fatal("Unexpected state in YAML processing", line)
             }
         }
 
-        override fun processBlankLine(npt: NumberedParseText) {
+        override fun processBlankLine(line: Line) {
             when (state) {
                 State.DASH -> {}
-                State.CHILD -> child.processBlankLine(npt)
+                State.CHILD -> child.processBlankLine(line)
                 State.CLOSED -> {}
             }
         }
 
-        private fun processDash(npt: NumberedParseText) {
-            if (npt.matchDash()) {
-                if (npt.isExhausted || npt.matchHash()) {
+        private fun processDash(line: Line) {
+            if (line.matchDash()) {
+                if (line.isExhausted || line.matchHash()) {
                     child = InitialBlock(indent + 1)
                 }
                 else {
-                    child = InitialBlock(npt.index)
-                    child.processLine(npt)
+                    child = InitialBlock(line.index)
+                    child.processLine(line)
                 }
                 state = State.CHILD
             }
         }
 
-        override fun conclude(npt: NumberedParseText): YAMLNode? {
+        override fun conclude(line: Line): YAMLNode? {
             when (state) {
                 State.DASH -> {}
                 State.CHILD -> {
-                    val childValue = child.conclude(npt)
+                    val childValue = child.conclude(line)
                     items.add(childValue)
                 }
                 State.CLOSED -> {}
@@ -460,37 +489,44 @@ object YAMLSimple {
             state = State.CONTINUATION
         }
 
-        override fun processLine(npt: NumberedParseText) {
+        override fun processLine(line: Line) {
             child = when (state) {
                 State.INITIAL -> {
                     when {
-                        npt.isExhausted -> return
-                        npt.match('#') -> return
-                        npt.match('"') -> npt.processDoubleQuotedScalar()
-                        npt.match('\'') -> npt.processSingleQuotedScalar()
-                        npt.match('|') -> {
-                            val chomping = npt.determineChomping()
-                            npt.skipSpaces()
-                            if (!(npt.matchHash() || npt.isExhausted))
-                                fatal("Illegal literal block header", npt)
+                        line.isExhausted -> return
+                        line.match('#') -> return
+                        line.match('"') -> line.processDoubleQuotedScalar()
+                        line.match('\'') -> line.processSingleQuotedScalar()
+                        line.match('|') -> {
+                            val chomping = line.determineChomping()
+                            line.skipSpaces()
+                            if (!(line.matchHash() || line.isExhausted))
+                                fatal("Illegal literal block header", line)
                             LiteralBlockScalar(indent, chomping)
                         }
-                        npt.match('>') -> {
-                            val chomping = npt.determineChomping()
-                            npt.skipSpaces()
-                            if (!(npt.matchHash() || npt.isExhausted))
-                                fatal("Illegal folded block header", npt)
+                        line.match('>') -> {
+                            val chomping = line.determineChomping()
+                            line.skipSpaces()
+                            if (!(line.matchHash() || line.isExhausted))
+                                fatal("Illegal folded block header", line)
                             FoldedBlockScalar(indent, chomping)
                         }
-                        // this could be where we check for flow sequence or mapping
-                        else -> npt.processPlainScalar()
+                        line.match('[') -> {
+                            FlowSequence(false).also {
+                                it.continuation(line)
+                            }
+                        }
+//                        npt.match('{') -> fatal("Can't handle flow mappings", npt)
+//                        npt.match('?') -> fatal("Can't handle standalone mapping keys", npt)
+//                        npt.match(':') -> fatal("Can't handle standalone mapping values", npt)
+                        else -> line.processPlainScalar()
                     }
                 }
-                State.CONTINUATION -> child.continuation(npt)
-                State.CLOSED -> fatal("Unexpected state in YAML processing", npt)
+                State.CONTINUATION -> child.continuation(line)
+                State.CLOSED -> fatal("Unexpected state in YAML processing", line)
             }
-            npt.skipSpaces()
-            if (npt.isExhausted || npt.matchHash()) {
+            line.skipSpaces()
+            if (line.isExhausted || line.matchHash()) {
                 if (child.terminated) {
                     node = child.getYAMLNode()
                     state = State.CLOSED
@@ -499,25 +535,25 @@ object YAMLSimple {
                     state = State.CONTINUATION
             }
             else
-                fatal("Illegal data following scalar", npt)
+                fatal("Illegal data following scalar", line)
         }
 
-        override fun processBlankLine(npt: NumberedParseText) {
+        override fun processBlankLine(line: Line) {
             when (state) {
                 State.INITIAL -> {}
-                State.CONTINUATION -> child.continuation(npt)
+                State.CONTINUATION -> child.continuation(line)
                 State.CLOSED -> {}
             }
         }
 
-        override fun conclude(npt: NumberedParseText): YAMLNode? {
+        override fun conclude(line: Line): YAMLNode? {
             when (state) {
                 State.INITIAL -> {}
                 State.CONTINUATION -> {
                     if (child.complete)
                         node = child.getYAMLNode()
                     else
-                        fatal("Incomplete scalar", npt)
+                        fatal("Incomplete scalar", line)
                 }
                 State.CLOSED -> {}
             }
@@ -525,7 +561,7 @@ object YAMLSimple {
             return node
         }
 
-        private fun NumberedParseText.determineChomping(): BlockScalar.Chomping = when {
+        private fun Line.determineChomping(): BlockScalar.Chomping = when {
             match('-') -> BlockScalar.Chomping.STRIP
             match('+') -> BlockScalar.Chomping.KEEP
             else -> BlockScalar.Chomping.CLIP
@@ -533,34 +569,119 @@ object YAMLSimple {
 
     }
 
-    abstract class Child(val terminated: Boolean) { // rename Nested ??? or Flow ???
+    abstract class Child(var terminated: Boolean) { // rename Nested ??? or Flow ???
 
         open val complete: Boolean
             get() = terminated
 
+        abstract val text: CharSequence
+
         abstract fun getYAMLNode(): YAMLNode?
 
-        abstract fun continuation(npt: NumberedParseText): Child
+        abstract fun continuation(line: Line): Child
 
     }
 
-    abstract class FlowScalar(val text: String, terminated: Boolean) : Child(terminated) {
+    class FlowSequence(terminated: Boolean) : Child(terminated) {
+
+        enum class State { ITEM, CONTINUATION, COMMA, CLOSED }
+
+        override val text: CharSequence
+            get() = getYAMLNode().toString() // ???
+
+        private var state: State = State.ITEM
+        private var child: Child = FlowNode("")
+        private var key: String? = null
+        private val items = mutableListOf<YAMLNode?>()
+
+        private fun processLine(line: Line) {
+            while (!line.atEnd()) {
+                if (state != State.COMMA) {
+                    when (state) {
+                        State.ITEM -> {
+                            child = when {
+                                line.match('"') -> line.processDoubleQuotedScalar()
+                                line.match('\'') -> line.processSingleQuotedScalar()
+                                line.match('[') -> FlowSequence(false).also { it.continuation(line) }
+                                // also - FlowMapping
+                                else -> line.processFlowNode()
+                            }
+                        }
+                        State.CONTINUATION -> child = child.continuation(line)
+                        else -> {}
+                    }
+                    line.skipSpaces()
+                    if (line.atEnd()) {
+                        state = when {
+                            child.terminated -> {
+                                if (key == null)
+                                    items.add(child.getYAMLNode())
+                                else
+                                    items.add(YAMLMapping(mapOf(key to child.getYAMLNode())))
+                                key = null
+                                State.COMMA
+                            }
+                            else -> State.CONTINUATION
+                        }
+                        break
+                    }
+                }
+                when {
+                    line.match(']') -> {
+                        if (key == null)
+                            child.getYAMLNode()?.let { items.add(it) }
+                        else
+                            items.add(YAMLMapping(mapOf(key to child.getYAMLNode())))
+                        terminated = true
+                        state = State.CLOSED
+                        break
+                    }
+                    line.matchColon() -> {
+                        key = child.getYAMLNode().toString()
+                        state = State.ITEM
+                    }
+                    line.match(',') -> {
+                        if (key == null)
+                            items.add(child.getYAMLNode())
+                        else
+                            items.add(YAMLMapping(mapOf(key to child.getYAMLNode())))
+                        key = null
+                        state = State.ITEM
+                    }
+                    else -> fatal("Unexpected character in flow sequence", line)
+                }
+            }
+        }
+
+        override fun continuation(line: Line): Child {
+            if (state != State.CLOSED)
+                processLine(line)
+            return this
+        }
+
+        override fun getYAMLNode(): YAMLNode? {
+            return YAMLSequence(items)
+        }
+
+    }
+
+    abstract class FlowScalar(override val text: String, terminated: Boolean) : Child(terminated) {
 
         override fun getYAMLNode(): YAMLNode? = YAMLString(text)
 
     }
 
-    class PlainScalar(text: String) : FlowScalar(text, false) {
+    open class PlainScalar(text: String) : FlowScalar(text, false) {
 
         override val complete: Boolean
             get() = true
 
-        override fun continuation(npt: NumberedParseText): Child {
-            return npt.processPlainScalar("$text ")
+        override fun continuation(line: Line): Child {
+            return line.processPlainScalar("$text ")
         }
 
         override fun getYAMLNode(): YAMLNode? {
-            if (text == "null" || text == "Null" || text == "NULL" || text == "~")
+            if (text.isEmpty() || text == "null" || text == "Null" || text == "NULL" || text == "~")
                 return null
             if (text == "true" || text == "True" || text == "TRUE")
                 return YAMLBoolean.TRUE
@@ -615,20 +736,28 @@ object YAMLSimple {
 
     }
 
+    class FlowNode(text: String) : PlainScalar(text) {
+
+        override fun continuation(line: Line): Child {
+            return line.processFlowNode("$text ")
+        }
+
+    }
+
     class DoubleQuotedScalar(text: String, terminated: Boolean) : FlowScalar(text, terminated) {
 
-        override fun continuation(npt: NumberedParseText): DoubleQuotedScalar {
+        override fun continuation(line: Line): DoubleQuotedScalar {
             val space = if (text.endsWith(' ')) "" else " "
-            return npt.processDoubleQuotedScalar("$text$space")
+            return line.processDoubleQuotedScalar("$text$space")
         }
 
     }
 
     class SingleQuotedScalar(text: String, terminated: Boolean) : FlowScalar(text, terminated) {
 
-        override fun continuation(npt: NumberedParseText): SingleQuotedScalar {
+        override fun continuation(line: Line): SingleQuotedScalar {
             val space = if (text.endsWith(' ')) "" else " "
-            return npt.processSingleQuotedScalar("$text$space")
+            return line.processSingleQuotedScalar("$text$space")
         }
 
     }
@@ -640,31 +769,31 @@ object YAMLSimple {
         enum class State { INITIAL, CONTINUATION }
 
         private var state: State = State.INITIAL
-        val text = StringBuilder()
+        override val text = StringBuilder()
 
         override val complete: Boolean
             get() = true
 
         abstract fun appendText(string: String)
 
-        override fun continuation(npt: NumberedParseText): BlockScalar {
+        override fun continuation(line: Line): BlockScalar {
             when (state) {
                 State.INITIAL -> {
-                    if (npt.index > indent)
-                        indent = npt.index
-                    if (!npt.isExhausted) {
+                    if (line.index > indent)
+                        indent = line.index
+                    if (!line.isExhausted) {
                         state = State.CONTINUATION
-                        npt.skipToEnd()
-                        appendText(npt.resultString)
+                        line.skipToEnd()
+                        appendText(line.resultString)
                     }
                 }
                 State.CONTINUATION -> {
-                    if (!npt.isExhausted && npt.index < indent)
-                        fatal("Bad indentation in block scalar", npt)
-                    if (npt.index > indent)
-                        npt.index = indent
-                    npt.skipToEnd()
-                    appendText(npt.resultString)
+                    if (!line.isExhausted && line.index < indent)
+                        fatal("Bad indentation in block scalar", line)
+                    if (line.index > indent)
+                        line.index = indent
+                    line.skipToEnd()
+                    appendText(line.resultString)
                 }
             }
             return this
@@ -712,7 +841,7 @@ object YAMLSimple {
 
     }
 
-    class YAMLException(message: String, npt: NumberedParseText, e: Exception? = null) :
-            JSONException("$message at ${npt.lineNumber}:${npt.index}", e)
+    class YAMLException(message: String, line: Line, e: Exception? = null) :
+            JSONException("$message at ${line.lineNumber}:${line.index}", e)
 
 }

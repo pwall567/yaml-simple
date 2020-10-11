@@ -46,7 +46,7 @@ class LoggingTest {
             val emptyFile = File("src/test/resources/empty.yaml")
             val result = YAMLSimple.process(emptyFile)
             expect(null) { result.rootNode }
-            expect("LoggingTest:DEBUG: Parse complete; result is null\n") { String(baos.toByteArray()).drop(13) }
+            expect("|LoggingTest|DEBUG| Parse complete; result is null\n") { String(baos.toByteArray()).drop(12) }
         }
         finally {
             YAMLSimple.log = saveLogger

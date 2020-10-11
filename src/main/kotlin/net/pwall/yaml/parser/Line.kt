@@ -1,5 +1,5 @@
 /*
- * @(#) NumberedParseText.java
+ * @(#) Line.java
  *
  * yaml-simple  Simple implementation of YAML
  * Copyright (c) 2020 Peter Wall
@@ -28,12 +28,12 @@ package net.pwall.yaml.parser
 import net.pwall.util.ParseText
 
 /**
- * An extension to [ParseText] for YAML parsing.  The class includes a line number (principally for error reporting) and
- * on initialisation, positions the index after any leading spaces.
+ * An extension to [ParseText] for parsing YAML lines.  The class includes a line number (principally for error
+ * reporting) and on initialisation, positions the index after any leading spaces.
  *
  * @author  Peter Wall
  */
-class NumberedParseText(val lineNumber: Int, line: String) : ParseText(line) {
+class Line(val lineNumber: Int, line: String) : ParseText(line) {
 
     init {
         skipPast { it == 0x20 }
