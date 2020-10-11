@@ -30,7 +30,6 @@ import java.io.File
 import java.io.InputStream
 import java.io.Reader
 
-import net.pwall.json.JSONException
 import net.pwall.log.Logger
 import net.pwall.log.LoggerFactory
 import net.pwall.util.ListMap
@@ -270,11 +269,10 @@ object YAMLSimple {
                 }
                 line.match('"') -> line.processDoubleQuotedScalar()
                 line.match('\'') -> line.processSingleQuotedScalar()
-                line.match('[') -> {
-                    FlowSequence(false).also {
-                        it.continuation(line)
-                    }
-                }
+                line.match('[') -> FlowSequence(false).also { it.continuation(line) }
+                line.match('{') -> FlowMapping(false).also { it.continuation(line) }
+                line.match('?') -> fatal("Can't handle standalone mapping keys", line)
+                line.match(':') -> fatal("Can't handle standalone mapping values", line)
                 else -> line.processPlainScalar()
             }
             line.skipSpaces()
@@ -511,14 +509,10 @@ object YAMLSimple {
                                 fatal("Illegal folded block header", line)
                             FoldedBlockScalar(indent, chomping)
                         }
-                        line.match('[') -> {
-                            FlowSequence(false).also {
-                                it.continuation(line)
-                            }
-                        }
-//                        npt.match('{') -> fatal("Can't handle flow mappings", npt)
-//                        npt.match('?') -> fatal("Can't handle standalone mapping keys", npt)
-//                        npt.match(':') -> fatal("Can't handle standalone mapping values", npt)
+                        line.match('[') -> FlowSequence(false).also { it.continuation(line) }
+                        line.match('{') -> FlowMapping(false).also { it.continuation(line) }
+                        line.match('?') -> fatal("Can't handle standalone mapping keys", line)
+                        line.match(':') -> fatal("Can't handle standalone mapping values", line)
                         else -> line.processPlainScalar()
                     }
                 }
@@ -587,7 +581,7 @@ object YAMLSimple {
         enum class State { ITEM, CONTINUATION, COMMA, CLOSED }
 
         override val text: CharSequence
-            get() = getYAMLNode().toString() // ???
+            get() = getYAMLNode().toString()
 
         private var state: State = State.ITEM
         private var child: Child = FlowNode("")
@@ -603,7 +597,7 @@ object YAMLSimple {
                                 line.match('"') -> line.processDoubleQuotedScalar()
                                 line.match('\'') -> line.processSingleQuotedScalar()
                                 line.match('[') -> FlowSequence(false).also { it.continuation(line) }
-                                // also - FlowMapping
+                                line.match('{') -> FlowMapping(false).also { it.continuation(line) }
                                 else -> line.processFlowNode()
                             }
                         }
@@ -613,14 +607,7 @@ object YAMLSimple {
                     line.skipSpaces()
                     if (line.atEnd()) {
                         state = when {
-                            child.terminated -> {
-                                if (key == null)
-                                    items.add(child.getYAMLNode())
-                                else
-                                    items.add(YAMLMapping(mapOf(key to child.getYAMLNode())))
-                                key = null
-                                State.COMMA
-                            }
+                            child.terminated -> State.COMMA
                             else -> State.CONTINUATION
                         }
                         break
@@ -661,6 +648,83 @@ object YAMLSimple {
 
         override fun getYAMLNode(): YAMLNode? {
             return YAMLSequence(items)
+        }
+
+    }
+
+    class FlowMapping(terminated: Boolean) : Child(terminated) {
+
+        enum class State { ITEM, CONTINUATION, COMMA, CLOSED }
+
+        private var state: State = State.ITEM
+        private var child: Child = FlowNode("")
+        private var key: String? = null
+        private val properties = LinkedHashMap<String, YAMLNode?>()
+
+        override val text: CharSequence
+            get() = getYAMLNode().toString()
+
+        override fun continuation(line: Line): Child {
+            if (state != State.CLOSED)
+                processLine(line)
+            return this
+        }
+
+        override fun getYAMLNode(): YAMLNode? {
+            return YAMLMapping(properties)
+        }
+
+        private fun processLine(line: Line) {
+            while (!line.atEnd()) {
+                if (state != State.COMMA) {
+                    when (state) {
+                        State.ITEM -> {
+                            child = when {
+                                line.match('"') -> line.processDoubleQuotedScalar()
+                                line.match('\'') -> line.processSingleQuotedScalar()
+                                line.match('[') -> FlowSequence(false).also { it.continuation(line) }
+                                line.match('{') -> FlowMapping(false).also { it.continuation(line) }
+                                else -> line.processFlowNode()
+                            }
+                        }
+                        State.CONTINUATION -> child = child.continuation(line)
+                        else -> {}
+                    }
+                    line.skipSpaces()
+                    if (line.atEnd()) {
+                        state = when {
+                            child.terminated -> State.COMMA
+                            else -> State.CONTINUATION
+                        }
+                        break
+                    }
+                }
+                when {
+                    line.match('}') -> {
+                        if (key == null) {
+                            if (child.getYAMLNode() != null)
+                                fatal("Unexpected end of flow mapping", line)
+                        }
+                        else
+                            properties[key.toString()] = child.getYAMLNode()
+                        terminated = true
+                        state = State.CLOSED
+                        break
+                    }
+                    line.matchColon() || child is DoubleQuotedScalar && line.match(':') -> {
+                        key = child.getYAMLNode().toString()
+                        state = State.ITEM
+                    }
+                    line.match(',') -> {
+                        if (key == null)
+                            fatal("Key missing in flow mapping", line)
+                        properties[key.toString()] = child.getYAMLNode()
+                        key = null
+                        state = State.ITEM
+                    }
+                    else -> fatal("Unexpected character in flow mapping", line)
+                }
+            }
         }
 
     }
@@ -840,8 +904,5 @@ object YAMLSimple {
         }
 
     }
-
-    class YAMLException(message: String, line: Line, e: Exception? = null) :
-            JSONException("$message at ${line.lineNumber}:${line.index}", e)
 
 }

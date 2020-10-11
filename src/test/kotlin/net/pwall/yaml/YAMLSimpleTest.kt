@@ -58,63 +58,63 @@ class YAMLSimpleTest {
     @Test fun `should process plain scalar`() {
         val file = File("src/test/resources/plainscalar.yaml")
         val result = YAMLSimple.process(file)
-        log.info { result.rootNode?.toJSON() }
+        log.debug { result.rootNode?.toJSON() }
         expect("http://pwall.net/schema.json#/aaa") { (result.rootNode as YAMLString).get() }
     }
 
     @Test fun `should process double quoted scalar`() {
         val file = File("src/test/resources/doublequotedscalar.yaml")
         val result = YAMLSimple.process(file)
-        log.info { result.rootNode?.toJSON() }
+        log.debug { result.rootNode?.toJSON() }
         expect("a b \n \" \u2014") { (result.rootNode as YAMLString).get() }
     }
 
     @Test fun `should process multi-line scalar`() {
         val file = File("src/test/resources/multilinescalar.yaml")
         val result = YAMLSimple.process(file)
-        log.info { result.rootNode?.toJSON() }
+        log.debug { result.rootNode?.toJSON() }
         expect("abc def ghi") { (result.rootNode as YAMLString).get() }
     }
 
     @Test fun `should process integer scalar`() {
         val file = File("src/test/resources/integerscalar.yaml")
         val result = YAMLSimple.process(file)
-        log.info { result.rootNode?.toJSON() }
+        log.debug { result.rootNode?.toJSON() }
         expect(123) { (result.rootNode as YAMLInt).get() }
     }
 
     @Test fun `should process decimal scalar`() {
         val file = File("src/test/resources/decimalscalar.yaml")
         val result = YAMLSimple.process(file)
-        log.info { result.rootNode?.toJSON() }
+        log.debug { result.rootNode?.toJSON() }
         expect(BigDecimal("12345.67")) { (result.rootNode as YAMLDecimal).get() }
     }
 
     @Test fun `should process simple key-value`() {
         val file = File("src/test/resources/keyvalue.yaml")
         val result = YAMLSimple.process(file)
-        log.info { result.rootNode?.toJSON() }
+        log.debug { result.rootNode?.toJSON() }
         expect("value") { ((result.rootNode as? YAMLMapping)?.get("key") as? YAMLString)?.get() }
     }
 
     @Test fun `should process simple key-integer`() {
         val file = File("src/test/resources/keyinteger.yaml")
         val result = YAMLSimple.process(file)
-        log.info { result.rootNode?.toJSON() }
+        log.debug { result.rootNode?.toJSON() }
         expect(123) { ((result.rootNode as? YAMLMapping)?.get("key") as? YAMLInt)?.get() }
     }
 
     @Test fun `should process simple block property`() {
         val file = File("src/test/resources/keyblock.yaml")
         val result = YAMLSimple.process(file)
-        log.info { result.rootNode?.toJSON() }
+        log.debug { result.rootNode?.toJSON() }
         expect("data") { ((result.rootNode as? YAMLMapping)?.get("key") as? YAMLString)?.get() }
     }
 
     @Test fun `should process nested block property`() {
         val file = File("src/test/resources/nestedblock.yaml")
         val result = YAMLSimple.process(file)
-        log.info { result.rootNode?.toJSON() }
+        log.debug { result.rootNode?.toJSON() }
         (result.rootNode as? YAMLMapping)?.let {
             expect(1) { it.size }
             (it["key"] as? YAMLMapping)?.let {
@@ -127,7 +127,7 @@ class YAMLSimpleTest {
     @Test fun `should process multiple properties`() {
         val file = File("src/test/resources/multipleproperties.yaml")
         val result = YAMLSimple.process(file)
-        log.info { result.rootNode?.toJSON() }
+        log.debug { result.rootNode?.toJSON() }
         (result.rootNode as? YAMLMapping)?.let {
             expect(3) { it.size }
             expect("abc") { (it["prop1"] as? YAMLString)?.get() }
@@ -139,14 +139,14 @@ class YAMLSimpleTest {
     @Test fun `should process array with single item`() {
         val file = File("src/test/resources/array1.yaml")
         val result = YAMLSimple.process(file)
-        log.info { result.rootNode?.toJSON() }
+        log.debug { result.rootNode?.toJSON() }
         expect("abc") { ((result.rootNode as? YAMLSequence)?.get(0) as? YAMLString)?.get() }
     }
 
     @Test fun `should process array with two items`() {
         val file = File("src/test/resources/array2.yaml")
         val result = YAMLSimple.process(file)
-        log.info { result.rootNode?.toJSON() }
+        log.debug { result.rootNode?.toJSON() }
         (result.rootNode as? YAMLSequence)?.let {
             expect(2) { it.size }
             expect("abc") { (it[0] as? YAMLString)?.get() }
@@ -157,14 +157,14 @@ class YAMLSimpleTest {
     @Test fun `should process literal block scalar`() {
         val file = File("src/test/resources/literalblockscalar.yaml")
         val result = YAMLSimple.process(file)
-        log.info { result.rootNode?.toJSON() }
+        log.debug { result.rootNode?.toJSON() }
         expect("hello\nworld\n") { ((result.rootNode as? YAMLMapping)?.get("abc") as? YAMLString)?.get() }
     }
 
     @Test fun `should process flow sequence`() {
         val file = File("src/test/resources/flowsequence.yaml")
         val result = YAMLSimple.process(file)
-        log.info { result.rootNode?.toJSON() }
+        log.debug { result.rootNode?.toJSON() }
         (result.rootNode as? YAMLSequence)?.let {
             expect(2) { it.size }
             expect("abc") { (it[0] as? YAMLString)?.get() }
@@ -175,7 +175,7 @@ class YAMLSimpleTest {
     @Test fun `should process more complex flow sequence`() {
         val file = File("src/test/resources/flowsequence2.yaml")
         val result = YAMLSimple.process(file)
-        log.info { result.rootNode?.toJSON() }
+        log.debug { result.rootNode?.toJSON() }
         (result.rootNode as? YAMLSequence)?.let {
             expect(3) { it.size }
             expect("abc def") { (it[0] as? YAMLString)?.get() }
@@ -187,7 +187,7 @@ class YAMLSimpleTest {
     @Test fun `should process flow sequence of mappings`() {
         val file = File("src/test/resources/flowsequence3.yaml")
         val result = YAMLSimple.process(file)
-        log.info { result.rootNode?.toJSON() }
+        log.debug { result.rootNode?.toJSON() }
         (result.rootNode as? YAMLSequence)?.let { sequence ->
             expect(3) { sequence.size }
             (sequence[0] as? YAMLMapping)?.let {
@@ -208,7 +208,7 @@ class YAMLSimpleTest {
     @Test fun `should process nested flow sequences`() {
         val file = File("src/test/resources/flowsequence4.yaml")
         val result = YAMLSimple.process(file)
-        log.info { result.rootNode?.toJSON() }
+        log.debug { result.rootNode?.toJSON() }
         (result.rootNode as? YAMLSequence)?.let { sequence ->
             expect(3) { sequence.size }
             (sequence[0] as? YAMLSequence)?.let {
@@ -226,10 +226,21 @@ class YAMLSimpleTest {
         } ?: fail("Outer block not a sequence")
     }
 
+    @Test fun `should process flow mapping`() {
+        val file = File("src/test/resources/flowmapping.yaml")
+        val result = YAMLSimple.process(file)
+        log.debug { result.rootNode?.toJSON() }
+        (result.rootNode as? YAMLMapping)?.let {
+            expect(2) { it.size }
+            expect(1234) { (it["abcde"] as? YAMLInt)?.get() }
+            expect("World!") { (it["hello"] as? YAMLString)?.get() }
+        } ?: fail("Outer block not a mapping")
+    }
+
     @Test fun `should process example JSON schema`() {
         val file = File("src/test/resources/example.schema.yaml")
         val result = YAMLSimple.process(file)
-        log.info { result.rootNode?.toJSON() }
+        log.debug { result.rootNode?.toJSON() }
         (result.rootNode as? YAMLMapping)?.let {
             expect(6) { it.size }
             expect("http://json-schema.org/draft/2019-09/schema") { (it["\$schema"] as? YAMLString)?.get() }

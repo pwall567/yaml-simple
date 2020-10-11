@@ -32,42 +32,39 @@ The currently implemented subset includes:
 - Block Scalars (literal and folded)
 - Flow Scalars (plain, single quoted and double quoted)
 - Flow Sequences
+- Flow Mappings
 - Comments
 
-Not yet implemented, but in the development pipeline:
-
-- Flow Mappings
-
-Further down the track:
+Not yet implemented:
 
 - Anchors and Aliases
 - The "?" and ":" syntax for Block Mapping entries
 - Directives
 - Tags
 
-Also, the parser may not meet the specification in all respects, even for the constructs that it does handle.
+Also, the parser may yet not meet the specification in all respects, even for the constructs that it does handle.
 
 ## Dependency Specification
 
-The latest version of the library is 0.1, and it may be obtained from the Maven Central repository.
+The latest version of the library is 0.2, and it may be obtained from the Maven Central repository.
 
 ### Maven
 ```xml
     <dependency>
       <groupId>net.pwall.yaml</groupId>
       <artifactId>yaml-simple</artifactId>
-      <version>0.1</version>
+      <version>0.2</version>
     </dependency>
 ```
 ### Gradle
 ```groovy
-    implementation 'net.pwall.yaml:yaml-simple:0.1'
+    implementation 'net.pwall.yaml:yaml-simple:0.2'
 ```
 ### Gradle (kts)
 ```kotlin
-    implementation("net.pwall.yaml:yaml-simple:0.1")
+    implementation("net.pwall.yaml:yaml-simple:0.2")
 ```
 
 Peter Wall
 
-2020-10-05
+2020-10-11
