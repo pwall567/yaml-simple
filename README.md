@@ -19,7 +19,7 @@ For example, to retrieve the `description` property of the `info` entry of a Swa
     val file = File("path.to.swagger.file")
     val yamlDocument = YAMLSimple.processFile(file)
     val pointer = JSONPointer("/info/description")
-    val description = pointer.eval(yamlDocument.rootNode)
+    val description = pointer.find(yamlDocument.rootNode)
 ```
 
 ## Implemented Subset
@@ -41,8 +41,9 @@ Not yet implemented:
 - The "?" and ":" syntax for Block Mapping entries
 - Directives
 - Tags
+- Multiple documents in a single file
 
-Also, the parser may yet not meet the specification in all respects, even for the constructs that it does handle.
+Also, the parser may not yet meet the specification in all respects, even for the constructs that it does handle.
 
 ## Dependency Specification
 
