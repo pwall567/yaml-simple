@@ -1,5 +1,8 @@
 # yaml-simple
 
+[![Build Status](https://travis-ci.org/pwall567/yaml-simple.svg?branch=main)](https://travis-ci.org/pwall567/yaml-simple)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A simple YAML processor.
 
 ## Quick Start
