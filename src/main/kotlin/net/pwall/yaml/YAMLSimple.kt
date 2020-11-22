@@ -25,7 +25,6 @@
 
 package net.pwall.yaml
 
-import java.io.BufferedReader
 import java.io.File
 import java.io.InputStream
 import java.io.Reader
@@ -46,28 +45,43 @@ object YAMLSimple {
 
     var log: Logger = LoggerFactory.getDefaultLogger(YAMLSimple::class.qualifiedName)
 
-    enum class State { INITIAL, DIRECTIVE, MAIN, CLOSED }
+    enum class State { INITIAL, DIRECTIVE, MAIN, ENDED }
 
+    /**
+     * Process a [File] to a YAML document.
+     *
+     * @param   file    a file containing a YAML document
+     * @return          the parsed YAML document
+     */
     fun process(file: File): YAMLDocument {
         file.inputStream().use {
             return process(it)
         }
     }
 
+    /**
+     * Process a [InputStream] to a YAML document.
+     *
+     * @param   inputStream an [InputStream] containing a YAML document
+     * @return              the parsed YAML document
+     */
     fun process(inputStream: InputStream): YAMLDocument {
         return process(inputStream.reader())
     }
 
+    /**
+     * Process a [Reader] to a YAML document.
+     *
+     * @param   reader  a [Reader] containing a YAML document
+     * @return          the parsed YAML document
+     */
     fun process(reader: Reader): YAMLDocument {
         var state = State.INITIAL
         var version: Pair<Int, Int>? = null
-        val brdr = if (reader is BufferedReader) reader else reader.buffered()
         val outerBlock = InitialBlock(0)
         var lineNumber = 0
-        while (true) {
-            ++lineNumber
-            val text = brdr.readLine() ?: break
-            val line = Line(lineNumber, text)
+        reader.forEachLine { text ->
+            val line = Line(++lineNumber, text)
             when (state) {
                 State.INITIAL -> {
                     when {
@@ -75,9 +89,12 @@ object YAMLSimple {
                             version = processYAMLDirective(line)
                             state = State.DIRECTIVE
                         }
-                        text.startsWith('%') -> warn("Unrecognised directive ignored - $text")
+                        text.startsWith('%') -> {
+                            warn("Unrecognised directive ignored - $text")
+                            state = State.DIRECTIVE
+                        }
                         text.startsWith("---") -> state = State.MAIN
-                        text.startsWith("...") -> state = State.CLOSED
+                        text.startsWith("...") -> state = State.ENDED
                         !line.atEnd() -> {
                             state = State.MAIN
                             outerBlock.processLine(line)
@@ -86,26 +103,24 @@ object YAMLSimple {
                 }
                 State.DIRECTIVE -> {
                     when {
-                        text.startsWith("%YAML") -> fatal("Duplicate %YAML directive", line)
+                        text.startsWith("%YAML") -> fatal("Duplicate or misplaced %YAML directive", line)
                         text.startsWith('%') -> warn("Unrecognised directive ignored - $text")
                         text.startsWith("---") -> state = State.MAIN
-                        text.startsWith("...") -> state = State.CLOSED
-                        !line.atEnd() -> {
-                            state = State.MAIN
-                            outerBlock.processLine(line)
-                        }
+                        text.startsWith("...") -> state = State.ENDED
+                        !line.atEnd() -> fatal("Illegal data following directive(s)", line)
                     }
                 }
                 State.MAIN -> {
                     when {
-                        text.startsWith("...") -> state = State.CLOSED
+                        text.startsWith("...") -> state = State.ENDED
+                        text.startsWith("---") -> fatal("Multiple documents not allowed", line)
                         line.isExhausted -> outerBlock.processBlankLine(line)
                         else -> outerBlock.processLine(line)
                     }
                 }
-                State.CLOSED -> {
+                State.ENDED -> {
                     if (text.trim().isNotEmpty())
-                        fatal("Non-blank lines after close", line)
+                        fatal("Non-blank lines after end of document", line)
                 }
             }
         }
@@ -117,7 +132,7 @@ object YAMLSimple {
             }
             "Parse complete; result is $type"
         }
-        return if (version == null) YAMLDocument(rootNode) else YAMLDocument(rootNode, version.first, version.second)
+        return version?.let { YAMLDocument(rootNode, it.first, it.second) } ?: YAMLDocument(rootNode)
     }
 
     private fun processYAMLDirective(line: Line): Pair<Int, Int> {
@@ -131,7 +146,7 @@ object YAMLSimple {
         if (majorVersion != 1)
             fatal("%YAML version must be 1.x", line)
         line.skipSpaces()
-        if (!line.isExhausted && !line.matchHash())
+        if (!line.atEnd())
             fatal("Illegal data on %YAML directive", line)
         if (minorVersion !in 1..2)
             warn("Unexpected YAML version - $majorVersion.$minorVersion")
