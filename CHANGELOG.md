@@ -2,6 +2,10 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [Unreleased]
+### Changed
+- `YAMLSimple`: fixed bug in escape sequences
+
 ## [0.2.1] - 2020-10-25
 ### Changed
 - `pom.xml`: bumped library version (`jsonutil` 3.1 -> 4.0)

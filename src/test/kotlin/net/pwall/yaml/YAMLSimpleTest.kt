@@ -31,6 +31,7 @@ import kotlin.test.fail
 
 import java.io.File
 import java.math.BigDecimal
+import net.pwall.json.JSONFormat
 
 import net.pwall.log.Logger
 import net.pwall.log.LoggerFactory
@@ -66,7 +67,7 @@ class YAMLSimpleTest {
         val file = File("src/test/resources/doublequotedscalar.yaml")
         val result = YAMLSimple.process(file)
         log.debug { result.rootNode?.toJSON() }
-        expect("a b \n \" \u2014") { (result.rootNode as YAMLString).get() }
+        expect("a b \n \r \" A A \u2014 A \uD83D\uDE02") { (result.rootNode as YAMLString).get() }
     }
 
     @Test fun `should process multi-line scalar`() {
@@ -240,7 +241,7 @@ class YAMLSimpleTest {
     @Test fun `should process example JSON schema`() {
         val file = File("src/test/resources/example.schema.yaml")
         val result = YAMLSimple.process(file)
-        log.debug { result.rootNode?.toJSON() }
+        log.debug { JSONFormat.create().format(result.rootNode) }
         (result.rootNode as? YAMLMapping)?.let {
             expect(6) { it.size }
             expect("http://json-schema.org/draft/2019-09/schema") { (it["\$schema"] as? YAMLString)?.get() }

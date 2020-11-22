@@ -34,6 +34,7 @@ import net.pwall.log.Logger
 import net.pwall.log.LoggerFactory
 import net.pwall.util.ListMap
 import net.pwall.util.ParseText
+import net.pwall.util.Strings
 import net.pwall.yaml.parser.Line
 
 /**
@@ -202,6 +203,7 @@ object YAMLSimple {
             match('n') -> sb.append('\n')
             match('v') -> sb.append('\u000B')
             match('f') -> sb.append('\u000C')
+            match('r') -> sb.append('\r')
             match('e') -> sb.append('\u001B')
             match(' ') -> sb.append(' ')
             match('"') -> sb.append('"')
@@ -220,6 +222,16 @@ object YAMLSimple {
                 if (!matchHexFixed(4))
                     fatal("Illegal unicode value in double quoted scalar", this)
                 sb.append(resultHexInt.toChar())
+            }
+            match('U') -> {
+                if (!matchHexFixed(8))
+                    fatal("Illegal unicode value in double quoted scalar", this)
+                try {
+                    Strings.appendUTF16(sb, resultHexInt)
+                }
+                catch (e: IllegalArgumentException) {
+                    fatal("Illegal 32-bit unicode value in double quoted scalar", this)
+                }
             }
             else -> fatal("Illegal escape sequence in double quoted scalar", this)
         }
