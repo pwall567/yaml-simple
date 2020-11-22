@@ -39,14 +39,16 @@ The currently implemented subset includes:
 - Flow Sequences
 - Flow Mappings
 - Comments
+- %YAML directive
 
 Not yet implemented:
 
 - Anchors and Aliases
 - The "?" and ":" syntax for Block Mapping entries
-- Directives
+- Directives other than %YAML
 - Tags
 - Multiple documents in a single file
+- Named floating-point pseudo-values (`.inf`, `.nan`)
 
 Also, the parser may not yet meet the specification in all respects, even for the constructs that it does handle.
 
