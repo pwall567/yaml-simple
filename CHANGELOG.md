@@ -5,6 +5,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 ## [Unreleased]
 ### Changed
 - `YAMLSimple`: fixed bug in escape sequences
+- `YAMLSimple`: added processing of %YAML directive
 
 ## [0.2.1] - 2020-10-25
 ### Changed

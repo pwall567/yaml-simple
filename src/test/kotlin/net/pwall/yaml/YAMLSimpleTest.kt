@@ -26,13 +26,14 @@
 package net.pwall.yaml
 
 import kotlin.test.Test
+import kotlin.test.assertFailsWith
 import kotlin.test.expect
 import kotlin.test.fail
 
 import java.io.File
 import java.math.BigDecimal
-import net.pwall.json.JSONFormat
 
+import net.pwall.json.JSONFormat
 import net.pwall.log.Logger
 import net.pwall.log.LoggerFactory
 
@@ -54,6 +55,64 @@ class YAMLSimpleTest {
         val reader = File("src/test/resources/empty.yaml").reader()
         val result = YAMLSimple.process(reader)
         expect(null) { result.rootNode }
+    }
+
+    @Test fun `should process file starting with separator`() {
+        val file = File("src/test/resources/separator1.yaml")
+        val result = YAMLSimple.process(file)
+        log.debug { result.rootNode?.toJSON() }
+        expect("abc") { (result.rootNode as YAMLString).get() }
+    }
+
+    @Test fun `should process file starting with separator and ending with terminator`() {
+        val file = File("src/test/resources/separator2.yaml")
+        val result = YAMLSimple.process(file)
+        log.debug { result.rootNode?.toJSON() }
+        expect("abc") { (result.rootNode as YAMLString).get() }
+        expect(1) { result.majorVersion }
+        expect(2) { result.minorVersion }
+    }
+
+    @Test fun `should process file starting with separator with comment`() {
+        val file = File("src/test/resources/separator3.yaml")
+        val result = YAMLSimple.process(file)
+        log.debug { result.rootNode?.toJSON() }
+        expect("Hello") { (result.rootNode as YAMLString).get() }
+        expect(1) { result.majorVersion }
+        expect(2) { result.minorVersion }
+    }
+
+    @Test fun `should process file starting with YAML directive`() {
+        val file = File("src/test/resources/directive1.yaml")
+        val result = YAMLSimple.process(file)
+        log.debug { result.rootNode?.toJSON() }
+        expect("abc") { (result.rootNode as YAMLString).get() }
+        expect(1) { result.majorVersion }
+        expect(2) { result.minorVersion }
+    }
+
+    @Test fun `should process file starting with YAML 1 1 directive`() {
+        val file = File("src/test/resources/directive2.yaml")
+        val result = YAMLSimple.process(file)
+        log.debug { result.rootNode?.toJSON() }
+        expect("abc") { (result.rootNode as YAMLString).get() }
+        expect(1) { result.majorVersion }
+        expect(1) { result.minorVersion }
+    }
+
+    @Test fun `should process file starting with YAML directive with comment`() {
+        val file = File("src/test/resources/directive4.yaml")
+        val result = YAMLSimple.process(file)
+        log.debug { result.rootNode?.toJSON() }
+        expect("abcdef") { (result.rootNode as YAMLString).get() }
+        expect(1) { result.majorVersion }
+        expect(2) { result.minorVersion }
+    }
+
+    @Test fun `should fail on YAML directive not 1 x`() {
+        val file = File("src/test/resources/directive3.yaml")
+        val exception = assertFailsWith<YAMLException> { YAMLSimple.process(file) }
+        expect("%YAML version must be 1.x at 1:10") { exception.message }
     }
 
     @Test fun `should process plain scalar`() {

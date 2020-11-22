@@ -46,7 +46,7 @@ object YAMLSimple {
 
     var log: Logger = LoggerFactory.getDefaultLogger(YAMLSimple::class.qualifiedName)
 
-    enum class State { INITIAL, MAIN, CLOSED }
+    enum class State { INITIAL, DIRECTIVE, MAIN, CLOSED }
 
     fun process(file: File): YAMLDocument {
         file.inputStream().use {
@@ -60,43 +60,52 @@ object YAMLSimple {
 
     fun process(reader: Reader): YAMLDocument {
         var state = State.INITIAL
+        var version: Pair<Int, Int>? = null
         val brdr = if (reader is BufferedReader) reader else reader.buffered()
         val outerBlock = InitialBlock(0)
         var lineNumber = 0
         while (true) {
             ++lineNumber
             val text = brdr.readLine() ?: break
+            val line = Line(lineNumber, text)
             when (state) {
                 State.INITIAL -> {
                     when {
-                        text.startsWith("%YAML") -> warn("%YAML directive ignored - $text")
+                        text.startsWith("%YAML") -> {
+                            version = processYAMLDirective(line)
+                            state = State.DIRECTIVE
+                        }
                         text.startsWith('%') -> warn("Unrecognised directive ignored - $text")
                         text.startsWith("---") -> state = State.MAIN
                         text.startsWith("...") -> state = State.CLOSED
-                        else -> {
-                            val line = Line(lineNumber, text)
-                            if (!line.atEnd()) {
-                                state = State.MAIN
-                                outerBlock.processLine(line)
-                            }
+                        !line.atEnd() -> {
+                            state = State.MAIN
+                            outerBlock.processLine(line)
+                        }
+                    }
+                }
+                State.DIRECTIVE -> {
+                    when {
+                        text.startsWith("%YAML") -> fatal("Duplicate %YAML directive", line)
+                        text.startsWith('%') -> warn("Unrecognised directive ignored - $text")
+                        text.startsWith("---") -> state = State.MAIN
+                        text.startsWith("...") -> state = State.CLOSED
+                        !line.atEnd() -> {
+                            state = State.MAIN
+                            outerBlock.processLine(line)
                         }
                     }
                 }
                 State.MAIN -> {
                     when {
                         text.startsWith("...") -> state = State.CLOSED
-                        else -> {
-                            val line = Line(lineNumber, text)
-                            if (line.isExhausted)
-                                outerBlock.processBlankLine(line)
-                            else
-                                outerBlock.processLine(line)
-                        }
+                        line.isExhausted -> outerBlock.processBlankLine(line)
+                        else -> outerBlock.processLine(line)
                     }
                 }
                 State.CLOSED -> {
                     if (text.trim().isNotEmpty())
-                        fatal("Non-blank lines after close", Line(lineNumber, ""))
+                        fatal("Non-blank lines after close", line)
                 }
             }
         }
@@ -108,7 +117,25 @@ object YAMLSimple {
             }
             "Parse complete; result is $type"
         }
-        return YAMLDocument(rootNode)
+        return if (version == null) YAMLDocument(rootNode) else YAMLDocument(rootNode, version.first, version.second)
+    }
+
+    private fun processYAMLDirective(line: Line): Pair<Int, Int> {
+        line.skip(5)
+        if (!line.matchSpaces() || !line.matchDec())
+            fatal("Illegal %YAML directive", line)
+        val majorVersion = line.resultInt
+        if (!line.match('.') || !line.matchDec())
+            fatal("Illegal version number on %YAML directive", line)
+        val minorVersion = line.resultInt
+        if (majorVersion != 1)
+            fatal("%YAML version must be 1.x", line)
+        line.skipSpaces()
+        if (!line.isExhausted && !line.matchHash())
+            fatal("Illegal data on %YAML directive", line)
+        if (minorVersion !in 1..2)
+            warn("Unexpected YAML version - $majorVersion.$minorVersion")
+        return majorVersion to minorVersion
     }
 
     private fun warn(message: String) {
