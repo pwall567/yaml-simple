@@ -61,14 +61,14 @@ class YAMLSimpleTest {
         val file = File("src/test/resources/separator1.yaml")
         val result = YAMLSimple.process(file)
         log.debug { result.rootNode?.toJSON() }
-        expect("abc") { (result.rootNode as YAMLString).get() }
+        expect("abc") { (result.rootNode as YAMLString).value }
     }
 
     @Test fun `should process file starting with separator and ending with terminator`() {
         val file = File("src/test/resources/separator2.yaml")
         val result = YAMLSimple.process(file)
         log.debug { result.rootNode?.toJSON() }
-        expect("abc") { (result.rootNode as YAMLString).get() }
+        expect("abc") { (result.rootNode as YAMLString).value }
         expect(1) { result.majorVersion }
         expect(2) { result.minorVersion }
     }
@@ -77,7 +77,7 @@ class YAMLSimpleTest {
         val file = File("src/test/resources/separator3.yaml")
         val result = YAMLSimple.process(file)
         log.debug { result.rootNode?.toJSON() }
-        expect("Hello") { (result.rootNode as YAMLString).get() }
+        expect("Hello") { (result.rootNode as YAMLString).value }
         expect(1) { result.majorVersion }
         expect(2) { result.minorVersion }
     }
@@ -86,7 +86,7 @@ class YAMLSimpleTest {
         val file = File("src/test/resources/directive1.yaml")
         val result = YAMLSimple.process(file)
         log.debug { result.rootNode?.toJSON() }
-        expect("abc") { (result.rootNode as YAMLString).get() }
+        expect("abc") { (result.rootNode as YAMLString).value }
         expect(1) { result.majorVersion }
         expect(2) { result.minorVersion }
     }
@@ -95,7 +95,7 @@ class YAMLSimpleTest {
         val file = File("src/test/resources/directive2.yaml")
         val result = YAMLSimple.process(file)
         log.debug { result.rootNode?.toJSON() }
-        expect("abc") { (result.rootNode as YAMLString).get() }
+        expect("abc") { (result.rootNode as YAMLString).value }
         expect(1) { result.majorVersion }
         expect(1) { result.minorVersion }
     }
@@ -104,7 +104,7 @@ class YAMLSimpleTest {
         val file = File("src/test/resources/directive4.yaml")
         val result = YAMLSimple.process(file)
         log.debug { result.rootNode?.toJSON() }
-        expect("abcdef") { (result.rootNode as YAMLString).get() }
+        expect("abcdef") { (result.rootNode as YAMLString).value }
         expect(1) { result.majorVersion }
         expect(2) { result.minorVersion }
     }
@@ -119,56 +119,56 @@ class YAMLSimpleTest {
         val file = File("src/test/resources/plainscalar.yaml")
         val result = YAMLSimple.process(file)
         log.debug { result.rootNode?.toJSON() }
-        expect("http://pwall.net/schema.json#/aaa") { (result.rootNode as YAMLString).get() }
+        expect("http://pwall.net/schema.json#/aaa") { (result.rootNode as YAMLString).value }
     }
 
     @Test fun `should process double quoted scalar`() {
         val file = File("src/test/resources/doublequotedscalar.yaml")
         val result = YAMLSimple.process(file)
         log.debug { result.rootNode?.toJSON() }
-        expect("a b \n \r \" A A \u2014 A \uD83D\uDE02") { (result.rootNode as YAMLString).get() }
+        expect("a b \n \r \" A A \u2014 A \uD83D\uDE02") { (result.rootNode as YAMLString).value }
     }
 
     @Test fun `should process multi-line scalar`() {
         val file = File("src/test/resources/multilinescalar.yaml")
         val result = YAMLSimple.process(file)
         log.debug { result.rootNode?.toJSON() }
-        expect("abc def ghi") { (result.rootNode as YAMLString).get() }
+        expect("abc def ghi") { (result.rootNode as YAMLString).value }
     }
 
     @Test fun `should process integer scalar`() {
         val file = File("src/test/resources/integerscalar.yaml")
         val result = YAMLSimple.process(file)
         log.debug { result.rootNode?.toJSON() }
-        expect(123) { (result.rootNode as YAMLInt).get() }
+        expect(123) { (result.rootNode as YAMLInt).value }
     }
 
     @Test fun `should process decimal scalar`() {
         val file = File("src/test/resources/decimalscalar.yaml")
         val result = YAMLSimple.process(file)
         log.debug { result.rootNode?.toJSON() }
-        expect(BigDecimal("12345.67")) { (result.rootNode as YAMLDecimal).get() }
+        expect(BigDecimal("12345.67")) { (result.rootNode as YAMLDecimal).value }
     }
 
     @Test fun `should process simple key-value`() {
         val file = File("src/test/resources/keyvalue.yaml")
         val result = YAMLSimple.process(file)
         log.debug { result.rootNode?.toJSON() }
-        expect("value") { ((result.rootNode as? YAMLMapping)?.get("key") as? YAMLString)?.get() }
+        expect("value") { ((result.rootNode as? YAMLMapping)?.get("key") as? YAMLString)?.value }
     }
 
     @Test fun `should process simple key-integer`() {
         val file = File("src/test/resources/keyinteger.yaml")
         val result = YAMLSimple.process(file)
         log.debug { result.rootNode?.toJSON() }
-        expect(123) { ((result.rootNode as? YAMLMapping)?.get("key") as? YAMLInt)?.get() }
+        expect(123) { ((result.rootNode as? YAMLMapping)?.get("key") as? YAMLInt)?.value }
     }
 
     @Test fun `should process simple block property`() {
         val file = File("src/test/resources/keyblock.yaml")
         val result = YAMLSimple.process(file)
         log.debug { result.rootNode?.toJSON() }
-        expect("data") { ((result.rootNode as? YAMLMapping)?.get("key") as? YAMLString)?.get() }
+        expect("data") { ((result.rootNode as? YAMLMapping)?.get("key") as? YAMLString)?.value }
     }
 
     @Test fun `should process nested block property`() {
@@ -179,7 +179,7 @@ class YAMLSimpleTest {
             expect(1) { it.size }
             (it["key"] as? YAMLMapping)?.let {
                 expect(1) { it.size }
-                expect("inner") { (it["nested"] as? YAMLString)?.get() }
+                expect("inner") { (it["nested"] as? YAMLString)?.value }
             } ?: fail("Inner block not a mapping")
         } ?: fail("Outer block not a mapping")
     }
@@ -190,8 +190,8 @@ class YAMLSimpleTest {
         log.debug { result.rootNode?.toJSON() }
         (result.rootNode as? YAMLMapping)?.let {
             expect(3) { it.size }
-            expect("abc") { (it["prop1"] as? YAMLString)?.get() }
-            expect(" X ") { (it["prop2"] as? YAMLString)?.get() }
+            expect("abc") { (it["prop1"] as? YAMLString)?.value }
+            expect(" X ") { (it["prop2"] as? YAMLString)?.value }
             expect(null) { it["prop3"] }
         } ?: fail("Outer block not a mapping")
     }
@@ -200,7 +200,7 @@ class YAMLSimpleTest {
         val file = File("src/test/resources/array1.yaml")
         val result = YAMLSimple.process(file)
         log.debug { result.rootNode?.toJSON() }
-        expect("abc") { ((result.rootNode as? YAMLSequence)?.get(0) as? YAMLString)?.get() }
+        expect("abc") { ((result.rootNode as? YAMLSequence)?.get(0) as? YAMLString)?.value }
     }
 
     @Test fun `should process array with two items`() {
@@ -209,8 +209,8 @@ class YAMLSimpleTest {
         log.debug { result.rootNode?.toJSON() }
         (result.rootNode as? YAMLSequence)?.let {
             expect(2) { it.size }
-            expect("abc") { (it[0] as? YAMLString)?.get() }
-            expect("def") { (it[1] as? YAMLString)?.get() }
+            expect("abc") { (it[0] as? YAMLString)?.value }
+            expect("def") { (it[1] as? YAMLString)?.value }
         } ?: fail("Outer block not a sequence")
     }
 
@@ -218,7 +218,7 @@ class YAMLSimpleTest {
         val file = File("src/test/resources/literalblockscalar.yaml")
         val result = YAMLSimple.process(file)
         log.debug { result.rootNode?.toJSON() }
-        expect("hello\nworld\n") { ((result.rootNode as? YAMLMapping)?.get("abc") as? YAMLString)?.get() }
+        expect("hello\nworld\n") { ((result.rootNode as? YAMLMapping)?.get("abc") as? YAMLString)?.value }
     }
 
     @Test fun `should process flow sequence`() {
@@ -227,8 +227,8 @@ class YAMLSimpleTest {
         log.debug { result.rootNode?.toJSON() }
         (result.rootNode as? YAMLSequence)?.let {
             expect(2) { it.size }
-            expect("abc") { (it[0] as? YAMLString)?.get() }
-            expect("def") { (it[1] as? YAMLString)?.get() }
+            expect("abc") { (it[0] as? YAMLString)?.value }
+            expect("def") { (it[1] as? YAMLString)?.value }
         } ?: fail("Outer block not a sequence")
     }
 
@@ -238,9 +238,9 @@ class YAMLSimpleTest {
         log.debug { result.rootNode?.toJSON() }
         (result.rootNode as? YAMLSequence)?.let {
             expect(3) { it.size }
-            expect("abc def") { (it[0] as? YAMLString)?.get() }
-            expect("ghi") { (it[1] as? YAMLString)?.get() }
-            expect("jkl") { (it[2] as? YAMLString)?.get() }
+            expect("abc def") { (it[0] as? YAMLString)?.value }
+            expect("ghi") { (it[1] as? YAMLString)?.value }
+            expect("jkl") { (it[2] as? YAMLString)?.value }
         } ?: fail("Outer block not a sequence")
     }
 
@@ -252,15 +252,15 @@ class YAMLSimpleTest {
             expect(3) { sequence.size }
             (sequence[0] as? YAMLMapping)?.let {
                 expect(1) { it.size }
-                expect(123) { (it["abc"] as? YAMLInt)?.get() }
+                expect(123) { (it["abc"] as? YAMLInt)?.value }
             }
             (sequence[1] as? YAMLMapping)?.let {
                 expect(1) { it.size }
-                expect(456) { (it["abc"] as? YAMLInt)?.get() }
+                expect(456) { (it["abc"] as? YAMLInt)?.value }
             }
             (sequence[2] as? YAMLMapping)?.let {
                 expect(1) { it.size }
-                expect(789) { (it["def"] as? YAMLInt)?.get() }
+                expect(789) { (it["def"] as? YAMLInt)?.value }
             }
         } ?: fail("Outer block not a sequence")
     }
@@ -273,12 +273,12 @@ class YAMLSimpleTest {
             expect(3) { sequence.size }
             (sequence[0] as? YAMLSequence)?.let {
                 expect(1) { it.size }
-                expect("abc") { (it[0] as? YAMLString)?.get() }
+                expect("abc") { (it[0] as? YAMLString)?.value }
             }
             (sequence[1] as? YAMLSequence)?.let {
                 expect(2) { it.size }
-                expect("def") { (it[0] as? YAMLString)?.get() }
-                expect(888) { (it[1] as? YAMLInt)?.get() }
+                expect("def") { (it[0] as? YAMLString)?.value }
+                expect(888) { (it[1] as? YAMLInt)?.value }
             }
             (sequence[2] as? YAMLSequence)?.let {
                 expect(0) { it.size }
@@ -292,8 +292,8 @@ class YAMLSimpleTest {
         log.debug { result.rootNode?.toJSON() }
         (result.rootNode as? YAMLMapping)?.let {
             expect(2) { it.size }
-            expect(1234) { (it["abcde"] as? YAMLInt)?.get() }
-            expect("World!") { (it["hello"] as? YAMLString)?.get() }
+            expect(1234) { (it["abcde"] as? YAMLInt)?.value }
+            expect("World!") { (it["hello"] as? YAMLString)?.value }
         } ?: fail("Outer block not a mapping")
     }
 
@@ -303,48 +303,48 @@ class YAMLSimpleTest {
         log.debug { JSONFormat.create().format(result.rootNode) }
         (result.rootNode as? YAMLMapping)?.let {
             expect(6) { it.size }
-            expect("http://json-schema.org/draft/2019-09/schema") { (it["\$schema"] as? YAMLString)?.get() }
-            expect("http://pwall.net/test") { (it["\$id"] as? YAMLString)?.get() }
-            expect("Product") { (it["title"] as? YAMLString)?.get() }
-            expect("object") { (it["type"] as? YAMLString)?.get() }
+            expect("http://json-schema.org/draft/2019-09/schema") { (it["\$schema"] as? YAMLString)?.value }
+            expect("http://pwall.net/test") { (it["\$id"] as? YAMLString)?.value }
+            expect("Product") { (it["title"] as? YAMLString)?.value }
+            expect("object") { (it["type"] as? YAMLString)?.value }
             (it["required"] as? YAMLSequence)?.let { required ->
                 expect(3) { required.size }
-                expect("id") { (required[0] as? YAMLString)?.get() }
-                expect("name") { (required[1] as? YAMLString)?.get() }
-                expect("price") { (required[2] as? YAMLString)?.get() }
+                expect("id") { (required[0] as? YAMLString)?.value }
+                expect("name") { (required[1] as? YAMLString)?.value }
+                expect("price") { (required[2] as? YAMLString)?.value }
             } ?: fail("required not a sequence")
             (it["properties"] as? YAMLMapping)?.let { properties ->
                 expect(5) { properties.size }
                 (properties["id"] as? YAMLMapping)?.let { id ->
                     expect(2) { id.size }
-                    expect("number") { (id["type"] as? YAMLString)?.get() }
-                    expect("Product identifier") { (id["description"] as? YAMLString)?.get() }
+                    expect("number") { (id["type"] as? YAMLString)?.value }
+                    expect("Product identifier") { (id["description"] as? YAMLString)?.value }
                 } ?: fail("id not a mapping")
                 (properties["name"] as? YAMLMapping)?.let { name ->
                     expect(2) { name.size }
-                    expect("string") { (name["type"] as? YAMLString)?.get() }
-                    expect("Name of the product") { (name["description"] as? YAMLString)?.get() }
+                    expect("string") { (name["type"] as? YAMLString)?.value }
+                    expect("Name of the product") { (name["description"] as? YAMLString)?.value }
                 } ?: fail("name not a mapping")
                 (properties["tags"] as? YAMLMapping)?.let { tags ->
                     expect(2) { tags.size }
-                    expect("array") { (tags["type"] as? YAMLString)?.get() }
+                    expect("array") { (tags["type"] as? YAMLString)?.value }
                     (tags["items"] as? YAMLMapping)?.let { items ->
                         expect(1) { items.size }
-                        expect("string") { (items["type"] as? YAMLString)?.get() }
+                        expect("string") { (items["type"] as? YAMLString)?.value }
                     } ?: fail("items not a mapping")
                 } ?: fail("tags not a mapping")
                 (properties["stock"] as? YAMLMapping)?.let { stock ->
                     expect(2) { stock.size }
-                    expect("object") { (stock["type"] as? YAMLString)?.get() }
+                    expect("object") { (stock["type"] as? YAMLString)?.value }
                     (stock["properties"] as? YAMLMapping)?.let { properties2 ->
                         expect(2) { properties2.size }
                         (properties2["warehouse"] as? YAMLMapping)?.let { warehouse ->
                             expect(1) { warehouse.size }
-                            expect("number") { (warehouse["type"] as? YAMLString)?.get() }
+                            expect("number") { (warehouse["type"] as? YAMLString)?.value }
                         } ?: fail("warehouse not a mapping")
                         (properties2["retail"] as? YAMLMapping)?.let { retail ->
                             expect(1) { retail.size }
-                            expect("number") { (retail["type"] as? YAMLString)?.get() }
+                            expect("number") { (retail["type"] as? YAMLString)?.value }
                         } ?: fail("retail not a mapping")
                     } ?: fail("properties not a mapping")
                 } ?: fail("tags not a mapping")
