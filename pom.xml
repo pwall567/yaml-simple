@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>net.pwall.yaml</groupId>
   <artifactId>yaml-simple</artifactId>
-  <version>1.0</version>
+  <version>1.1</version>
   <name>YAML Simple</name>
   <packaging>jar</packaging>
   <description>Simple implementation of YAML</description>
