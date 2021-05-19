@@ -2,7 +2,7 @@
  * @(#) YAMLSimpleTest.java
  *
  * yaml-simple  Simple implementation of YAML
- * Copyright (c) 2020 Peter Wall
+ * Copyright (c) 2020, 2021 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -294,6 +294,74 @@ class YAMLSimpleTest {
             expect(2) { it.size }
             expect(1234) { (it["abcde"] as? YAMLInt)?.value }
             expect("World!") { (it["hello"] as? YAMLString)?.value }
+        } ?: fail("Outer block not a mapping")
+    }
+
+    @Test fun `should process array as property of mapping`() {
+        val file = File("src/test/resources/arrayProperty1.yaml")
+        val result = YAMLSimple.process(file)
+        log.debug { result.rootNode?.toJSON() }
+        (result.rootNode as? YAMLMapping)?.let { outer ->
+            expect(1) { outer.size }
+            (outer["alpha"] as? YAMLMapping)?.let { inner ->
+                expect(1) { inner.size }
+                (inner["beta"] as? YAMLSequence)?.let { array ->
+                    expect(2) { array.size }
+                    expect(123) { (array[0] as? YAMLInt)?.value }
+                    expect(456) { (array[1] as? YAMLInt)?.value }
+                } ?: fail("Array not a sequence")
+            } ?: fail("Inner block not a mapping")
+        } ?: fail("Outer block not a mapping")
+    }
+
+    @Test fun `should process array as property of mapping with comment line`() {
+        val file = File("src/test/resources/arrayProperty2.yaml")
+        val result = YAMLSimple.process(file)
+        log.debug { result.rootNode?.toJSON() }
+        (result.rootNode as? YAMLMapping)?.let { outer ->
+            expect(1) { outer.size }
+            (outer["alpha"] as? YAMLMapping)?.let { inner ->
+                expect(1) { inner.size }
+                (inner["beta"] as? YAMLSequence)?.let { array ->
+                    expect(2) { array.size }
+                    expect(123) { (array[0] as? YAMLInt)?.value }
+                    expect(789) { (array[1] as? YAMLInt)?.value }
+                } ?: fail("Array not a sequence")
+            } ?: fail("Inner block not a mapping")
+        } ?: fail("Outer block not a mapping")
+    }
+
+    @Test fun `should process nested properties`() {
+        val file = File("src/test/resources/propertyProperty1.yaml")
+        val result = YAMLSimple.process(file)
+        log.debug { result.rootNode?.toJSON() }
+        (result.rootNode as? YAMLMapping)?.let { outer ->
+            expect(1) { outer.size }
+            (outer["alpha"] as? YAMLMapping)?.let { inner ->
+                expect(1) { inner.size }
+                (inner["beta"] as? YAMLMapping)?.let { third ->
+                    expect(2) { third.size }
+                    expect(123) { (third["gamma"] as? YAMLInt)?.value }
+                    expect(456) { (third["delta"] as? YAMLInt)?.value }
+                } ?: fail("Third level block not a mapping")
+            } ?: fail("Inner block not a mapping")
+        } ?: fail("Outer block not a mapping")
+    }
+
+    @Test fun `should process nested properties with comment line`() {
+        val file = File("src/test/resources/propertyProperty2.yaml")
+        val result = YAMLSimple.process(file)
+        log.debug { result.rootNode?.toJSON() }
+        (result.rootNode as? YAMLMapping)?.let { outer ->
+            expect(1) { outer.size }
+            (outer["alpha"] as? YAMLMapping)?.let { inner ->
+                expect(1) { inner.size }
+                (inner["beta"] as? YAMLMapping)?.let { third ->
+                    expect(2) { third.size }
+                    expect(123) { (third["gamma"] as? YAMLInt)?.value }
+                    expect(789) { (third["epsilon"] as? YAMLInt)?.value }
+                } ?: fail("Third level block not a mapping")
+            } ?: fail("Inner block not a mapping")
         } ?: fail("Outer block not a mapping")
     }
 

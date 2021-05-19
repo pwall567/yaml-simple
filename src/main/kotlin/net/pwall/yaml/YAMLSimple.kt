@@ -2,7 +2,7 @@
  * @(#) YAMLSimple.java
  *
  * yaml-simple  Simple implementation of YAML
- * Copyright (c) 2020 Peter Wall
+ * Copyright (c) 2020, 2021 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -114,7 +114,7 @@ object YAMLSimple {
                     when {
                         text.startsWith("...") -> state = State.ENDED
                         text.startsWith("---") -> fatal("Multiple documents not allowed", line)
-                        line.isExhausted -> outerBlock.processBlankLine(line)
+                        line.isExhausted || line.matchHash() -> outerBlock.processBlankLine(line)
                         else -> outerBlock.processLine(line)
                     }
                 }
@@ -289,7 +289,7 @@ object YAMLSimple {
 
         override fun processLine(line: Line) = fatal("Should not happen", line)
 
-        override fun conclude(line: Line): YAMLNode? = fatal("Should not happen", line)
+        override fun conclude(line: Line) = fatal("Should not happen", line)
 
     }
 
@@ -449,7 +449,7 @@ object YAMLSimple {
                 fatal("Illegal key in mapping", line)
         }
 
-        override fun conclude(line: Line): YAMLNode? {
+        override fun conclude(line: Line): YAMLMapping {
             when (state) {
                 State.KEY -> {}
                 State.CHILD -> properties[key] = child.conclude(line)
@@ -513,7 +513,7 @@ object YAMLSimple {
             }
         }
 
-        override fun conclude(line: Line): YAMLNode? {
+        override fun conclude(line: Line): YAMLSequence {
             when (state) {
                 State.DASH -> {}
                 State.CHILD -> {
@@ -700,9 +700,7 @@ object YAMLSimple {
             return this
         }
 
-        override fun getYAMLNode(): YAMLNode? {
-            return YAMLSequence(items)
-        }
+        override fun getYAMLNode() = YAMLSequence(items)
 
     }
 
@@ -724,9 +722,7 @@ object YAMLSimple {
             return this
         }
 
-        override fun getYAMLNode(): YAMLNode? {
-            return YAMLMapping(properties)
-        }
+        override fun getYAMLNode() = YAMLMapping(properties)
 
         private fun processLine(line: Line) {
             while (!line.atEnd()) {
