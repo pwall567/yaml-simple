@@ -2,6 +2,10 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [1.2.1] - 2021-06-20
+### Changed
+- `pom.xml`: updated dependency versions
+
 ## [1.2] - 2021-04-20
 ### Changed
 - `YAMLSimple`: fixed issue with comments and indentation
