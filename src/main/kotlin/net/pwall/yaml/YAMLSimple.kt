@@ -173,7 +173,6 @@ object YAMLSimple {
                     break
                 }
                 matchHash() -> {
-                    revert()
                     skipBackSpaces() // ???
                     break
                 }
@@ -197,7 +196,6 @@ object YAMLSimple {
                     break
                 }
                 matchHash() -> {
-                    revert()
                     skipBackSpaces() // ???
                     break
                 }
@@ -902,12 +900,26 @@ object YAMLSimple {
                     }
                 }
                 State.CONTINUATION -> {
-                    if (!line.isExhausted && line.index < indent)
-                        fatal("Bad indentation in block scalar", line)
-                    if (line.index > indent)
-                        line.index = indent
-                    line.skipToEnd()
-                    appendText(line.resultString)
+                    if (line.isExhausted) {
+                        if (line.index > indent) {
+                            line.start = indent
+                            appendText(line.resultString)
+                        }
+                        else
+                            appendText("")
+                    }
+                    else {
+                        if (line.index < indent) {
+                            if (!line.matchHash())
+                                fatal("Bad indentation in block scalar", line)
+                        }
+                        else {
+                            if (line.index > indent)
+                                line.index = indent
+                            line.skipToEnd()
+                            appendText(line.resultString)
+                        }
+                    }
                 }
             }
             return this
@@ -947,6 +959,8 @@ object YAMLSimple {
         override fun appendText(string: String) {
             if (text.endsWith('\n')) {
                 text.setLength(text.length - 1)
+                while (text.endsWith('\n'))
+                    text.setLength(text.length - 1)
                 text.append(' ')
             }
             text.append(string)

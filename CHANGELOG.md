@@ -2,6 +2,18 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [1.3] - 2021-09-16
+### Changed
+- `YAMLSimple`, `Line`: further fix for bug on comments
+
+## [1.2.3] - 2021-09-16
+### Changed
+- `YAMLSimple`: fixed bug on comments
+
+## [1.2.2] - 2021-09-16
+### Changed
+- `pom.xml`: updated dependency versions
+
 ## [1.2.1] - 2021-06-20
 ### Changed
 - `pom.xml`: updated dependency versions

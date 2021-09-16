@@ -67,9 +67,9 @@ class Line(val lineNumber: Int, line: String) : ParseText(line) {
     fun matchHash(): Boolean {
         if (!match('#'))
             return false
+        index = start
         if (start == 0 || isSpace(charAt(start - 1)))
             return true
-        index = start
         return false
     }
 
