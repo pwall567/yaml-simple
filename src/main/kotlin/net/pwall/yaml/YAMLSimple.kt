@@ -312,10 +312,9 @@ object YAMLSimple {
             val scalar = when {
                 line.atEnd() -> return
                 line.matchDash() -> {
-                    child = if (line.isExhausted || line.matchHash())
-                        SequenceBlock(initialIndex)
-                    else
-                        SequenceBlock(initialIndex, line)
+                    child = SequenceBlock(initialIndex)
+                    if (!line.atEnd())
+                        child.processLine(line)
                     state = State.CHILD
                     return
                 }
@@ -323,8 +322,15 @@ object YAMLSimple {
                 line.match('\'') -> line.processSingleQuotedScalar()
                 line.match('[') -> FlowSequence(false).also { it.continuation(line) }
                 line.match('{') -> FlowMapping(false).also { it.continuation(line) }
-                line.match('?') -> fatal("Can't handle standalone mapping keys", line)
-                line.match(':') -> fatal("Can't handle standalone mapping values", line)
+                line.match('?') -> {
+                    line.skipSpaces()
+                    child = ExplicitMappingBlock(initialIndex)
+                    if (!line.atEnd())
+                        child.processLine(line)
+                    state = State.CHILD
+                    return
+                }
+                line.match(':') -> fatal("Mapping value without key", line)
                 else -> line.processPlainScalar()
             }
             line.skipSpaces()
@@ -459,19 +465,87 @@ object YAMLSimple {
 
     }
 
+    class ExplicitMappingBlock(indent: Int) : Block(indent) {
+
+        enum class State { QM, QM_CHILD, COLON, COLON_CHILD, CLOSED }
+
+        private var state: State = State.QM_CHILD
+        private var child: Block = InitialBlock(indent + 1)
+        private val properties = ListMap<String, YAMLNode?>()
+        private var key: String = ""
+
+        override fun processLine(line: Line) {
+            when (state) {
+                State.QM -> processDetail(line, '?', State.QM_CHILD)
+                State.QM_CHILD -> {
+                    if (line.index >= child.indent)
+                        child.processLine(line)
+                    else {
+                        key = child.conclude(line)?.let { if (it is YAMLString) it.value else it.toString() } ?: "null"
+                        state = State.COLON
+                        processDetail(line, ':', State.COLON_CHILD)
+                    }
+                }
+                State.COLON -> processDetail(line, ':', State.COLON_CHILD)
+                State.COLON_CHILD -> {
+                    if (line.index >= child.indent)
+                        child.processLine(line)
+                    else {
+                        properties[key] = child.conclude(line)
+                        state = State.QM
+                        processDetail(line, '?', State.QM_CHILD)
+                    }
+                }
+                State.CLOSED -> fatal("Unexpected state in YAML processing", line)
+            }
+        }
+
+        override fun processBlankLine(line: Line) {
+            when (state) {
+                State.QM -> {}
+                State.QM_CHILD -> child.processBlankLine(line)
+                State.COLON -> {}
+                State.COLON_CHILD -> child.processBlankLine(line)
+                State.CLOSED -> {}
+            }
+        }
+
+        private fun processDetail(line: Line, indicator: Char, targetState: State) {
+            if (line.match(indicator)) {
+                line.skipSpaces()
+                if (line.atEnd())
+                    child = InitialBlock(indent + 1)
+                else {
+                    child = InitialBlock(line.index)
+                    child.processLine(line)
+                }
+                state = targetState
+            }
+            else
+                fatal("Unexpected content in block mapping", line)
+        }
+
+        override fun conclude(line: Line): YAMLMapping {
+            when (state) {
+                State.QM -> {}
+                State.QM_CHILD,
+                State.COLON -> fatal("Block mapping value missing", line)
+                State.COLON_CHILD -> properties[key] = child.conclude(line)
+                State.CLOSED -> {}
+            }
+            state = State.CLOSED
+            return YAMLMapping(properties)
+        }
+
+    }
+
     class SequenceBlock(indent: Int) : Block(indent) {
 
         enum class State { DASH, CHILD, CLOSED }
 
-        private var state: State = State.DASH
+        private var state: State = State.CHILD
         private val items = mutableListOf<YAMLNode?>()
-        private var child: Block = ErrorBlock
-
-        constructor(indent: Int, line: Line) : this(indent) {
-            child = InitialBlock(indent + 2)
-            child.processLine(line)
-            state = State.CHILD
-        }
+        private var child: Block = InitialBlock(indent + 2)
 
         override fun processLine(line: Line) {
             when (state) {
@@ -500,24 +574,22 @@ object YAMLSimple {
 
         private fun processDash(line: Line) {
             if (line.matchDash()) {
-                if (line.isExhausted || line.matchHash()) {
-                    child = InitialBlock(indent + 1)
-                }
+                if (line.atEnd())
+                    child = InitialBlock(indent + 2)
                 else {
                     child = InitialBlock(line.index)
                     child.processLine(line)
                 }
                 state = State.CHILD
             }
+            else
+                fatal("Unexpected content in block sequence", line)
         }
 
         override fun conclude(line: Line): YAMLSequence {
             when (state) {
                 State.DASH -> {}
-                State.CHILD -> {
-                    val childValue = child.conclude(line)
-                    items.add(childValue)
-                }
+                State.CHILD -> items.add(child.conclude(line))
                 State.CLOSED -> {}
             }
             state = State.CLOSED

@@ -2,6 +2,14 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [1.5] - 2021-09-21
+### Changed
+- `YAMLSimple`: fixed bug in block sequences
+
+## [1.4] - 2021-09-21
+### Changed
+- `YAMLSimple`: added explicit block mapping syntax ("?" and ":" lines)
+
 ## [1.3] - 2021-09-16
 ### Changed
 - `YAMLSimple`, `Line`: further fix for bug on comments

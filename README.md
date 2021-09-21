@@ -44,7 +44,6 @@ The currently implemented subset includes:
 Not yet implemented:
 
 - Anchors and Aliases
-- The "?" and ":" syntax for Block Mapping entries
 - Directives other than %YAML
 - Tags
 - Multiple documents in a single file
@@ -54,25 +53,25 @@ Also, the parser may not yet meet the specification in all respects, even for th
 
 ## Dependency Specification
 
-The latest version of the library is 1.3, and it may be obtained from the Maven Central repository.
+The latest version of the library is 1.5, and it may be obtained from the Maven Central repository.
 
 ### Maven
 ```xml
     <dependency>
       <groupId>net.pwall.yaml</groupId>
       <artifactId>yaml-simple</artifactId>
-      <version>1.3</version>
+      <version>1.5</version>
     </dependency>
 ```
 ### Gradle
 ```groovy
-    implementation 'net.pwall.yaml:yaml-simple:1.3'
+    implementation 'net.pwall.yaml:yaml-simple:1.5'
 ```
 ### Gradle (kts)
 ```kotlin
-    implementation("net.pwall.yaml:yaml-simple:1.3")
+    implementation("net.pwall.yaml:yaml-simple:1.5")
 ```
 
 Peter Wall
 
-2021-09-16
+2021-09-21

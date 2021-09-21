@@ -365,6 +365,42 @@ class YAMLSimpleTest {
         } ?: fail("Outer block not a mapping")
     }
 
+    @Test fun `should process explicit block mapping`() {
+        val file = File("src/test/resources/explicitblockmapping.yaml")
+        val result = YAMLSimple.process(file)
+        log.debug { result.rootNode?.toJSON() }
+        (result.rootNode as? YAMLMapping)?.let { outer ->
+            expect(1) { outer.size }
+            (outer["outer"] as? YAMLMapping)?.let { nested ->
+                expect(1) { nested.size }
+                (nested["key1"] as? YAMLMapping)?.let { inner->
+                    expect(1) { inner.size }
+                    expect("value1") { (inner["inner1"] as? YAMLString)?.value }
+                } ?: fail("Innermost block not a mapping")
+            } ?: fail("Nested block not a mapping")
+        } ?: fail("Outer block not a mapping")
+    }
+
+    @Test fun `should process block sequence with empty first line`() {
+        val file = File("src/test/resources/blocksequence.yaml")
+        val result = YAMLSimple.process(file)
+        log.debug { result.rootNode?.toJSON() }
+        (result.rootNode as? YAMLMapping)?.let { outer ->
+            expect(1) { outer.size }
+            (outer["outer"] as? YAMLSequence)?.let { array ->
+                expect(2) { array.size }
+                (array[0] as? YAMLMapping)?.let { inner ->
+                    expect(1) { inner.size }
+                    expect("value1") { (inner["inner"] as? YAMLString)?.value }
+                } ?: fail("Innermost block not a mapping")
+                (array[1] as? YAMLMapping)?.let { inner ->
+                    expect(1) { inner.size }
+                    expect("value2") { (inner["inner"] as? YAMLString)?.value }
+                } ?: fail("Innermost block not a mapping")
+            } ?: fail("Content not a sequence")
+        } ?: fail("Outer block not a mapping")
+    }
+
     @Test fun `should process example JSON schema`() {
         val file = File("src/test/resources/example.schema.yaml")
         val result = YAMLSimple.process(file)
