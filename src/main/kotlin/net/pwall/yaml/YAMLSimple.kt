@@ -226,7 +226,11 @@ object YAMLSimple {
         while (!isExhausted) {
             when {
                 match('"') -> return DoubleQuotedScalar(sb.toString(), true)
-                match('\\') -> processBackslash(sb)
+                match('\\') -> {
+                    if (isExhausted)
+                        return DoubleQuotedScalar(sb.toString(), false, escapedNewline =  true)
+                    processBackslash(sb)
+                }
                 else -> sb.append(char)
             }
         }
@@ -928,10 +932,11 @@ object YAMLSimple {
 
     }
 
-    class DoubleQuotedScalar(text: String, terminated: Boolean) : FlowScalar(text, terminated) {
+    class DoubleQuotedScalar(text: String, terminated: Boolean, private val escapedNewline: Boolean = false) :
+            FlowScalar(text, terminated) {
 
         override fun continuation(line: Line): DoubleQuotedScalar {
-            val space = if (text.endsWith(' ')) "" else " "
+            val space = if (escapedNewline || text.endsWith(' ')) "" else " "
             return line.processDoubleQuotedScalar("$text$space")
         }
 

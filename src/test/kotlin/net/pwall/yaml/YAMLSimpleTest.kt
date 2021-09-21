@@ -401,6 +401,17 @@ class YAMLSimpleTest {
         } ?: fail("Outer block not a mapping")
     }
 
+    @Test fun `should accept escaped newline in double-quoted scalar`() {
+        val file = File("src/test/resources/multilinedoublequoted.yaml")
+        val result = YAMLSimple.process(file)
+        log.debug { result.rootNode?.toJSON() }
+        (result.rootNode as? YAMLMapping)?.let { obj ->
+            expect(2) { obj.size }
+            expect("alphabet") { (obj["first"] as? YAMLString)?.value }
+            expect("alpha bet") { (obj["second"] as? YAMLString)?.value }
+        }
+    }
+
     @Test fun `should process example JSON schema`() {
         val file = File("src/test/resources/example.schema.yaml")
         val result = YAMLSimple.process(file)

@@ -2,6 +2,10 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [1.6] - 2021-09-21
+### Changed
+- `YAMLSimple`: fixed bug in flow scalars
+
 ## [1.5] - 2021-09-21
 ### Changed
 - `YAMLSimple`: fixed bug in block sequences
