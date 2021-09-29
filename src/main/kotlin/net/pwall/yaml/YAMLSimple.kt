@@ -328,7 +328,7 @@ object YAMLSimple {
                 line.match('{') -> FlowMapping(false).also { it.continuation(line) }
                 line.match('?') -> {
                     line.skipSpaces()
-                    child = ExplicitMappingBlock(initialIndex)
+                    child = MappingBlock(initialIndex)
                     if (!line.atEnd())
                         child.processLine(line)
                     state = State.CHILD
@@ -380,24 +380,26 @@ object YAMLSimple {
 
     }
 
-    class MappingBlock private constructor(indent: Int) : Block(indent) {
+    class MappingBlock(indent: Int) : Block(indent) {
 
-        enum class State { KEY, CHILD, CLOSED }
+        enum class State { KEY, CHILD, QM_CHILD, COLON, CLOSED }
 
-        private var state: State = State.CHILD
-        private var child: Block = ErrorBlock
+        private var state: State = State.QM_CHILD
+        private var child: Block = InitialBlock(indent + 1)
         private val properties = ListMap<String, YAMLNode?>()
         private var key: String = ""
 
         constructor(indent: Int, key: String) : this(indent) {
             this.key = key
             child = InitialBlock(indent + 1)
+            state = State.CHILD
         }
 
         constructor(indent: Int, key: String, line: Line) : this(indent) {
             this.key = key
             child = ChildBlock(indent + 1)
             child.processLine(line)
+            state = State.CHILD
         }
 
         override fun processLine(line: Line) {
@@ -407,14 +409,26 @@ object YAMLSimple {
                 line.revert()
             }
             when (state) {
-                State.KEY -> processKey(line)
+                State.KEY -> processQM(line)
+                State.QM_CHILD -> {
+                    if (line.index >= child.indent)
+                        child.processLine(line)
+                    else {
+                        key = child.conclude(line)?.let { if (it is YAMLString) it.value else it.toString() } ?: "null"
+                        if (properties.containsKey(key))
+                            fatal("Duplicate key in mapping - $key", line)
+                        state = State.COLON
+                        processColon(line)
+                    }
+                }
+                State.COLON -> processColon(line)
                 State.CHILD -> {
                     if (effectiveIndent >= child.indent)
                         child.processLine(line)
                     else {
                         properties[key] = child.conclude(line)
                         state = State.KEY
-                        processKey(line)
+                        processQM(line)
                     }
                 }
                 State.CLOSED -> fatal("Unexpected state in YAML processing", line)
@@ -423,99 +437,57 @@ object YAMLSimple {
 
         override fun processBlankLine(line: Line) {
             when (state) {
-                State.KEY -> {}
-                State.CHILD -> child.processBlankLine(line)
+                State.KEY,
+                State.COLON,
                 State.CLOSED -> {}
-            }
-        }
-
-        private fun processKey(line: Line) {
-            val scalar = when {
-                line.isExhausted -> return
-                line.match('#') -> return
-                line.match('"') -> line.processDoubleQuotedScalar()
-                line.match('\'') -> line.processSingleQuotedScalar()
-                else -> line.processPlainScalar()
-            }
-            line.skipSpaces()
-            if (line.matchColon()) {
-                key = scalar.text
-                if (properties.containsKey(key))
-                    fatal("Duplicate key in mapping - $key", line)
-                line.skipSpaces()
-                if (line.isExhausted || line.matchHash()) {
-                    child = InitialBlock(indent + 1)
-                    state = State.CHILD
-                }
-                else {
-                    child = ChildBlock(indent + 1)
-                    child.processLine(line)
-                    state = State.CHILD
-                }
-            }
-            else
-                fatal("Illegal key in mapping", line)
-        }
-
-        override fun conclude(line: Line): YAMLMapping {
-            when (state) {
-                State.KEY -> {}
-                State.CHILD -> properties[key] = child.conclude(line)
-                State.CLOSED -> {}
-            }
-            state = State.CLOSED
-            return YAMLMapping(properties)
-        }
-
-    }
-
-    class ExplicitMappingBlock(indent: Int) : Block(indent) {
-
-        enum class State { QM, QM_CHILD, COLON, COLON_CHILD, CLOSED }
-
-        private var state: State = State.QM_CHILD
-        private var child: Block = InitialBlock(indent + 1)
-        private val properties = ListMap<String, YAMLNode?>()
-        private var key: String = ""
-
-        override fun processLine(line: Line) {
-            when (state) {
-                State.QM -> processDetail(line, '?', State.QM_CHILD)
-                State.QM_CHILD -> {
-                    if (line.index >= child.indent)
-                        child.processLine(line)
-                    else {
-                        key = child.conclude(line)?.let { if (it is YAMLString) it.value else it.toString() } ?: "null"
-                        state = State.COLON
-                        processDetail(line, ':', State.COLON_CHILD)
-                    }
-                }
-                State.COLON -> processDetail(line, ':', State.COLON_CHILD)
-                State.COLON_CHILD -> {
-                    if (line.index >= child.indent)
-                        child.processLine(line)
-                    else {
-                        properties[key] = child.conclude(line)
-                        state = State.QM
-                        processDetail(line, '?', State.QM_CHILD)
-                    }
-                }
-                State.CLOSED -> fatal("Unexpected state in YAML processing", line)
-            }
-        }
-
-        override fun processBlankLine(line: Line) {
-            when (state) {
-                State.QM -> {}
+                State.CHILD,
                 State.QM_CHILD -> child.processBlankLine(line)
-                State.COLON -> {}
-                State.COLON_CHILD -> child.processBlankLine(line)
-                State.CLOSED -> {}
             }
         }
 
-        private fun processDetail(line: Line, indicator: Char, targetState: State) {
-            if (line.match(indicator)) {
+        private fun processQM(line: Line) {
+            when {
+                line.match('?') -> {
+                    line.skipSpaces()
+                    if (line.atEnd())
+                        child = InitialBlock(indent + 1)
+                    else {
+                        child = InitialBlock(line.index)
+                        child.processLine(line)
+                    }
+                    state = State.QM_CHILD
+                }
+                line.atEnd() -> return
+                else -> {
+                    val scalar = when {
+                        line.match('"') -> line.processDoubleQuotedScalar()
+                        line.match('\'') -> line.processSingleQuotedScalar()
+                        else -> line.processPlainScalar()
+                    }
+                    line.skipSpaces()
+                    if (line.matchColon()) {
+                        key = scalar.text
+                        if (properties.containsKey(key))
+                            fatal("Duplicate key in mapping - $key", line)
+                        line.skipSpaces()
+                        if (line.isExhausted || line.matchHash()) {
+                            child = InitialBlock(indent + 1)
+                            state = State.CHILD
+                        }
+                        else {
+                            child = ChildBlock(indent + 1)
+                            child.processLine(line)
+                            state = State.CHILD
+                        }
+                    }
+                    else
+                        fatal("Illegal key in mapping", line)
+                }
+            }
+        }
+
+        private fun processColon(line: Line) {
+            if (line.match(':')) {
                 line.skipSpaces()
                 if (line.atEnd())
                     child = InitialBlock(indent + 1)
@@ -523,7 +495,7 @@ object YAMLSimple {
                     child = InitialBlock(line.index)
                     child.processLine(line)
                 }
-                state = targetState
+                state = State.CHILD
             }
             else
                 fatal("Unexpected content in block mapping", line)
@@ -531,10 +503,10 @@ object YAMLSimple {
 
         override fun conclude(line: Line): YAMLMapping {
             when (state) {
-                State.QM -> {}
+                State.KEY -> {}
                 State.QM_CHILD,
                 State.COLON -> fatal("Block mapping value missing", line)
-                State.COLON_CHILD -> properties[key] = child.conclude(line)
+                State.CHILD -> properties[key] = child.conclude(line)
                 State.CLOSED -> {}
             }
             state = State.CLOSED

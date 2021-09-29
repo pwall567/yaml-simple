@@ -2,6 +2,10 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [1.7] - 2021-09-21
+### Changed
+- `YAMLSimple`: simplified block mapping
+
 ## [1.6] - 2021-09-21
 ### Changed
 - `YAMLSimple`: fixed bug in flow scalars

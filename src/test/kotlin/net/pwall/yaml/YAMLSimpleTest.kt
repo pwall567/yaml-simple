@@ -409,7 +409,26 @@ class YAMLSimpleTest {
             expect(2) { obj.size }
             expect("alphabet") { (obj["first"] as? YAMLString)?.value }
             expect("alpha bet") { (obj["second"] as? YAMLString)?.value }
-        }
+        } ?: fail("Outer block not a mapping")
+    }
+
+    @Test fun `should process combination of explicit and conventional block mapping`() {
+        val file = File("src/test/resources/combinedblockmapping.yaml")
+        val result = YAMLSimple.process(file)
+        log.debug { result.rootNode?.toJSON() }
+        (result.rootNode as? YAMLMapping)?.let { obj ->
+            expect(2) { obj.size }
+            (obj["first"] as? YAMLMapping)?.let { first ->
+                expect(2) { first.size }
+                expect("value1") { (first["key1"] as? YAMLString)?.value }
+                expect("value2") { (first["key2"] as? YAMLString)?.value }
+            } ?: fail("First block not a mapping")
+            (obj["second"] as? YAMLMapping)?.let { second ->
+                expect(2) { second.size }
+                expect("value1") { (second["key1"] as? YAMLString)?.value }
+                expect("value2") { (second["key2"] as? YAMLString)?.value }
+            } ?: fail("Second block not a mapping")
+        } ?: fail("Outer block not a mapping")
     }
 
     @Test fun `should process example JSON schema`() {
