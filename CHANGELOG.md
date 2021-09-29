@@ -2,6 +2,10 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [1.8] - 2021-09-29
+### Changed
+- `pom.xml`: updated dependency version
+
 ## [1.7] - 2021-09-21
 ### Changed
 - `YAMLSimple`: simplified block mapping

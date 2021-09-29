@@ -53,25 +53,25 @@ Also, the parser may not yet meet the specification in all respects, even for th
 
 ## Dependency Specification
 
-The latest version of the library is 1.7, and it may be obtained from the Maven Central repository.
+The latest version of the library is 1.8, and it may be obtained from the Maven Central repository.
 
 ### Maven
 ```xml
     <dependency>
       <groupId>net.pwall.yaml</groupId>
       <artifactId>yaml-simple</artifactId>
-      <version>1.7</version>
+      <version>1.8</version>
     </dependency>
 ```
 ### Gradle
 ```groovy
-    implementation 'net.pwall.yaml:yaml-simple:1.7'
+    implementation 'net.pwall.yaml:yaml-simple:1.8'
 ```
 ### Gradle (kts)
 ```kotlin
-    implementation("net.pwall.yaml:yaml-simple:1.7")
+    implementation("net.pwall.yaml:yaml-simple:1.8")
 ```
 
 Peter Wall
 
-2021-09-21
+2021-09-29
