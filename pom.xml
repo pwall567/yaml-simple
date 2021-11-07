@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>net.pwall.yaml</groupId>
   <artifactId>yaml-simple</artifactId>
-  <version>1.8</version>
+  <version>1.9</version>
   <name>YAML Simple</name>
   <packaging>jar</packaging>
   <description>Simple implementation of YAML</description>
@@ -19,7 +19,7 @@
   <parent>
     <groupId>net.pwall.maven</groupId>
     <artifactId>maven-kotlin</artifactId>
-    <version>2.1</version>
+    <version>3.0</version>
   </parent>
 
   <properties>
@@ -37,9 +37,9 @@
 
   <pluginRepositories>
     <pluginRepository>
-      <id>jcenter</id>
-      <name>JCenter</name>
-      <url>https://jcenter.bintray.com/</url>
+      <id>central</id>
+      <name>Maven Central</name>
+      <url>https://repo1.maven.org/maven2/</url>
     </pluginRepository>
   </pluginRepositories>
 
@@ -98,11 +98,6 @@
       <plugin>
         <groupId>org.jetbrains.dokka</groupId>
         <artifactId>dokka-maven-plugin</artifactId>
-        <configuration>
-          <sourceDirectories>
-            <dir>src/main/kotlin</dir>
-          </sourceDirectories>
-        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
