@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.com/pwall567/yaml-simple.svg?branch=main)](https://travis-ci.com/github/pwall567/yaml-simple)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Kotlin](https://img.shields.io/static/v1?label=Kotlin&message=v1.4.0&color=blue&logo=kotlin)](https://github.com/JetBrains/kotlin/releases/tag/v1.4.0)
+[![Kotlin](https://img.shields.io/static/v1?label=Kotlin&message=v1.5.20&color=7f52ff&logo=kotlin&logoColor=7f52ff)](https://github.com/JetBrains/kotlin/releases/tag/v1.5.20)
 [![Maven Central](https://img.shields.io/maven-central/v/net.pwall.yaml/yaml-simple?label=Maven%20Central)](https://search.maven.org/search?q=g:%22net.pwall.yaml%22%20AND%20a:%22yaml-simple%22)
 
 A simple YAML processor.
