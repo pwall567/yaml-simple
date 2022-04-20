@@ -2,7 +2,7 @@
  * @(#) LoggingTest.java
  *
  * yaml-simple  Simple implementation of YAML
- * Copyright (c) 2020 Peter Wall
+ * Copyright (c) 2020, 2022 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,30 +28,25 @@ package net.pwall.yaml
 import kotlin.test.Test
 import kotlin.test.expect
 
-import java.io.ByteArrayOutputStream
 import java.io.File
-import java.io.PrintStream
 
-import net.pwall.log.ConsoleLogger
 import net.pwall.log.Level
+import net.pwall.log.LogList
 
 class LoggingTest {
 
     @Test fun `should output message on completion`() {
-        val baos = ByteArrayOutputStream()
-        val printStream = PrintStream(baos)
-        val saveLogger = YAMLSimple.log
-        try {
-            YAMLSimple.log = ConsoleLogger("LoggingTest", Level.DEBUG, printStream)
+        LogList().use { // relies on DEBUG level being enabled (see logback.xml)
             val emptyFile = File("src/test/resources/empty.yaml")
             val result = YAMLSimple.process(emptyFile)
             expect(null) { result.rootNode }
-            expect("LoggingTest|DEBUG| Parse complete; result is null\n") {
-                String(baos.toByteArray()).substringAfter('|')
+            val list = it.toList()
+            expect(1) { list.size }
+            with(list[0]) {
+                expect("net.pwall.yaml.YAMLSimple") { name }
+                expect(Level.DEBUG) { level }
+                expect("Parse complete; result is null") { text }
             }
-        }
-        finally {
-            YAMLSimple.log = saveLogger
         }
     }
 
