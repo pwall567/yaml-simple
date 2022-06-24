@@ -29,8 +29,7 @@ import java.io.File
 import java.io.InputStream
 import java.io.Reader
 
-import net.pwall.log.Logger
-import net.pwall.log.LoggerFactory
+import net.pwall.log.getLogger
 import net.pwall.util.ListMap
 import net.pwall.util.ParseText
 import net.pwall.util.Strings
@@ -43,7 +42,7 @@ import net.pwall.yaml.parser.Line
  */
 object YAMLSimple {
 
-    var log: Logger = LoggerFactory.getDefaultLogger(YAMLSimple::class.qualifiedName)
+    private val log = getLogger()
 
     enum class State { INITIAL, DIRECTIVE, MAIN, ENDED }
 

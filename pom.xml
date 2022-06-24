@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>net.pwall.yaml</groupId>
   <artifactId>yaml-simple</artifactId>
-  <version>1.12</version>
+  <version>1.13</version>
   <name>YAML Simple</name>
   <packaging>jar</packaging>
   <description>Simple implementation of YAML</description>
@@ -61,8 +61,8 @@
     </dependency>
     <dependency>
       <groupId>net.pwall.log</groupId>
-      <artifactId>log-front</artifactId>
-      <version>4.0</version>
+      <artifactId>log-front-kotlin</artifactId>
+      <version>5.0</version>
     </dependency>
     <dependency>
       <groupId>org.jetbrains.kotlin</groupId>
@@ -80,12 +80,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-      <version>1.2.11</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>net.pwall.json</groupId>
       <artifactId>json-pointer</artifactId>
       <version>2.2</version>
@@ -100,6 +94,16 @@
       <plugin>
         <groupId>org.jetbrains.kotlin</groupId>
         <artifactId>kotlin-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>2.22.2</version>
+        <configuration>
+          <systemPropertyVariables>
+            <net.pwall.log.defaultLevel>DEBUG</net.pwall.log.defaultLevel>
+          </systemPropertyVariables>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>org.jetbrains.dokka</groupId>

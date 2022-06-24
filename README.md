@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.com/pwall567/yaml-simple.svg?branch=main)](https://travis-ci.com/github/pwall567/yaml-simple)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Kotlin](https://img.shields.io/static/v1?label=Kotlin&message=v1.5.20&color=7f52ff&logo=kotlin&logoColor=7f52ff)](https://github.com/JetBrains/kotlin/releases/tag/v1.5.20)
+[![Kotlin](https://img.shields.io/static/v1?label=Kotlin&message=v1.6.10&color=7f52ff&logo=kotlin&logoColor=7f52ff)](https://github.com/JetBrains/kotlin/releases/tag/v1.5.20)
 [![Maven Central](https://img.shields.io/maven-central/v/net.pwall.yaml/yaml-simple?label=Maven%20Central)](https://search.maven.org/search?q=g:%22net.pwall.yaml%22%20AND%20a:%22yaml-simple%22)
 
 A simple YAML processor.
@@ -53,25 +53,25 @@ Also, the parser may not yet meet the specification in all respects, even for th
 
 ## Dependency Specification
 
-The latest version of the library is 1.12, and it may be obtained from the Maven Central repository.
+The latest version of the library is 1.13, and it may be obtained from the Maven Central repository.
 
 ### Maven
 ```xml
     <dependency>
       <groupId>net.pwall.yaml</groupId>
       <artifactId>yaml-simple</artifactId>
-      <version>1.12</version>
+      <version>1.13</version>
     </dependency>
 ```
 ### Gradle
 ```groovy
-    implementation 'net.pwall.yaml:yaml-simple:1.12'
+    implementation 'net.pwall.yaml:yaml-simple:1.13'
 ```
 ### Gradle (kts)
 ```kotlin
-    implementation("net.pwall.yaml:yaml-simple:1.12")
+    implementation("net.pwall.yaml:yaml-simple:1.13")
 ```
 
 Peter Wall
 
-2022-06-13
+2022-06-24

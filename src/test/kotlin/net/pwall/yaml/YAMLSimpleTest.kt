@@ -34,8 +34,7 @@ import java.io.File
 import java.math.BigDecimal
 
 import net.pwall.json.JSONFormat
-import net.pwall.log.Logger
-import net.pwall.log.LoggerFactory
+import net.pwall.log.getLogger
 
 class YAMLSimpleTest {
 
@@ -488,7 +487,7 @@ class YAMLSimpleTest {
 
     companion object {
 
-        val log: Logger = LoggerFactory.getDefaultLogger(YAMLSimpleTest::class.qualifiedName)
+        val log = getLogger()
 
     }
 

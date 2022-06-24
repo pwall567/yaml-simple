@@ -45,7 +45,7 @@ class LoggingTest {
             with(list[0]) {
                 expect("net.pwall.yaml.YAMLSimple") { name }
                 expect(Level.DEBUG) { level }
-                expect("Parse complete; result is null") { text }
+                expect("Parse complete; result is null") { message }
             }
         }
     }
