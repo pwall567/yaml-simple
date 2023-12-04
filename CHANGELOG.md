@@ -2,6 +2,12 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [1.16] - 2023-12-04
+### Changed
+- `YAMLSimple`: fixed bug in flow sequence
+- `YAMLSimple`: fixed bug in nested flow mapping and sequence
+- `pom.xml`: updated dependency versions
+
 ## [1.15] - 2023-07-10
 ### Changed
 - `pom.xml`: updated dependency versions

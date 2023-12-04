@@ -430,6 +430,37 @@ class YAMLSimpleTest {
         } ?: fail("Outer block not a mapping")
     }
 
+    @Test fun `should process mixed flow sequence content`() {
+        val file = File("src/test/resources/mixedFlowSequence.yaml")
+        val result = YAMLSimple.process(file)
+        log.debug { result.rootNode?.toJSON() }
+        (result.rootNode as? YAMLMapping)?.let { obj ->
+            expect(1) { obj.size }
+            (obj["enum"] as? YAMLSequence)?.let { seq ->
+                expect(3) { seq.size }
+                expect("ABC") { (seq[0] as? YAMLString)?.value }
+                expect("123") { (seq[1] as? YAMLString)?.value }
+                expect("XYZ") { (seq[2] as? YAMLString)?.value }
+            }
+        }
+    }
+
+    @Test fun `should process mixed flow sequence with flow mapping`() {
+        val file = File("src/test/resources/mixedFlowSequenceWithMapping.yaml")
+        val result = YAMLSimple.process(file)
+        log.debug { result.rootNode?.toJSON() }
+        (result.rootNode as? YAMLMapping)?.let { obj ->
+            expect(1) { obj.size }
+            (obj["example"] as? YAMLSequence)?.let { seq ->
+                expect(1) { seq.size }
+                (seq[0] as? YAMLMapping)?.let { mapping ->
+                    expect(1) { mapping.size }
+                    expect("1.5") { (mapping["prop1"] as? YAMLString)?.value }
+                }
+            }
+        }
+    }
+
     @Test fun `should process example JSON schema`() {
         val file = File("src/test/resources/example.schema.yaml")
         val result = YAMLSimple.process(file)

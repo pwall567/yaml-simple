@@ -284,6 +284,7 @@ object YAMLSimple {
         abstract fun processLine(line: Line)
         open fun processBlankLine(line: Line) {}
         abstract fun conclude(line: Line): YAMLNode?
+        abstract fun inFlow(): Boolean
     }
 
     object ErrorBlock : Block(0) {
@@ -291,6 +292,8 @@ object YAMLSimple {
         override fun processLine(line: Line) = fatal("Should not happen", line)
 
         override fun conclude(line: Line) = fatal("Should not happen", line)
+
+        override fun inFlow(): Boolean = false
 
     }
 
@@ -301,6 +304,8 @@ object YAMLSimple {
         private var state: State = State.INITIAL
         private var node: YAMLNode? = null
         private var child: Block = ErrorBlock
+
+        override fun inFlow(): Boolean = state == State.CHILD && child.inFlow()
 
         override fun processLine(line: Line) {
             when (state) {
@@ -401,6 +406,8 @@ object YAMLSimple {
             state = State.CHILD
         }
 
+        override fun inFlow(): Boolean = (state == State.CHILD || state == State.QM_CHILD) && child.inFlow()
+
         override fun processLine(line: Line) {
             var effectiveIndent = line.index
             if (line.matchDash()) {
@@ -410,7 +417,7 @@ object YAMLSimple {
             when (state) {
                 State.KEY -> processQM(line)
                 State.QM_CHILD -> {
-                    if (line.index >= child.indent)
+                    if (line.index > indent || child.inFlow())
                         child.processLine(line)
                     else {
                         key = child.conclude(line)?.let { if (it is YAMLString) it.value else it.toString() } ?: "null"
@@ -422,7 +429,7 @@ object YAMLSimple {
                 }
                 State.COLON -> processColon(line)
                 State.CHILD -> {
-                    if (effectiveIndent >= child.indent)
+                    if (effectiveIndent > indent || child.inFlow())
                         child.processLine(line)
                     else {
                         properties[key] = child.conclude(line)
@@ -522,11 +529,13 @@ object YAMLSimple {
         private val items = mutableListOf<YAMLNode?>()
         private var child: Block = InitialBlock(indent + 2)
 
+        override fun inFlow(): Boolean = state == State.CHILD && child.inFlow()
+
         override fun processLine(line: Line) {
             when (state) {
                 State.DASH -> processDash(line)
                 State.CHILD -> {
-                    if (line.index >= child.indent)
+                    if (line.index > indent || child.inFlow())
                         child.processLine(line)
                     else {
                         val childValue = child.conclude(line)
@@ -585,6 +594,8 @@ object YAMLSimple {
             this.child = scalar
             state = State.CONTINUATION
         }
+
+        override fun inFlow(): Boolean = state == State.CONTINUATION && child.inFlow()
 
         override fun processLine(line: Line) {
             child = when (state) {
@@ -673,6 +684,8 @@ object YAMLSimple {
 
         abstract fun continuation(line: Line): Child
 
+        abstract fun inFlow(): Boolean
+
     }
 
     class FlowSequence(terminated: Boolean) : Child(terminated) {
@@ -687,11 +700,14 @@ object YAMLSimple {
         private var key: String? = null
         private val items = mutableListOf<YAMLNode?>()
 
+        override fun inFlow(): Boolean = state != State.CLOSED
+
         private fun processLine(line: Line) {
             while (!line.atEnd()) {
                 if (state != State.COMMA) {
                     when (state) {
                         State.ITEM -> {
+                            line.skipSpaces()
                             child = when {
                                 line.match('"') -> line.processDoubleQuotedScalar()
                                 line.match('\'') -> line.processSingleQuotedScalar()
@@ -761,6 +777,8 @@ object YAMLSimple {
         override val text: CharSequence
             get() = getYAMLNode().toString()
 
+        override fun inFlow(): Boolean = state != State.CLOSED
+
         override fun continuation(line: Line): Child {
             if (state != State.CLOSED)
                 processLine(line)
@@ -827,6 +845,8 @@ object YAMLSimple {
     abstract class FlowScalar(override val text: String, terminated: Boolean) : Child(terminated) {
 
         override fun getYAMLNode(): YAMLNode? = YAMLString(text)
+
+        override fun inFlow(): Boolean = false
 
     }
 
@@ -935,6 +955,8 @@ object YAMLSimple {
             get() = true
 
         abstract fun appendText(string: String)
+
+        override fun inFlow(): Boolean = false
 
         override fun continuation(line: Line): BlockScalar {
             when (state) {
