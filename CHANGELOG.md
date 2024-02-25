@@ -2,6 +2,10 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [1.17] - 2024-02-25
+### Changed
+- `pom.xml`: updated dependency version
+
 ## [1.16] - 2023-12-04
 ### Changed
 - `YAMLSimple`: fixed bug in flow sequence

@@ -36,7 +36,7 @@ import net.pwall.log.LogList
 class LoggingTest {
 
     @Test fun `should output message on completion`() {
-        LogList().use { // relies on DEBUG level being enabled (see logback.xml)
+        LogList().use { // relies on DEBUG level being enabled (see pom.xml)
             val emptyFile = File("src/test/resources/empty.yaml")
             val result = YAMLSimple.process(emptyFile)
             expect(null) { result.rootNode }

@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>net.pwall.yaml</groupId>
   <artifactId>yaml-simple</artifactId>
-  <version>1.16</version>
+  <version>1.17</version>
   <name>YAML Simple</name>
   <packaging>jar</packaging>
   <description>Simple implementation of YAML</description>
@@ -62,7 +62,7 @@
     <dependency>
       <groupId>net.pwall.log</groupId>
       <artifactId>log-front-kotlin</artifactId>
-      <version>5.2</version>
+      <version>5.3</version>
     </dependency>
     <dependency>
       <groupId>org.jetbrains.kotlin</groupId>
