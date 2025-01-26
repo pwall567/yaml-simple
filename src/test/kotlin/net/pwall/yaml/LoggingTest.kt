@@ -26,9 +26,10 @@
 package net.pwall.yaml
 
 import kotlin.test.Test
-import kotlin.test.expect
 
 import java.io.File
+
+import io.kstuff.test.shouldBe
 
 import net.pwall.log.Level
 import net.pwall.log.LogList
@@ -39,13 +40,13 @@ class LoggingTest {
         LogList().use { // relies on DEBUG level being enabled (see pom.xml)
             val emptyFile = File("src/test/resources/empty.yaml")
             val result = YAMLSimple.process(emptyFile)
-            expect(null) { result.rootNode }
+            result.rootNode shouldBe null
             val list = it.toList()
-            expect(1) { list.size }
+            list.size shouldBe 1
             with(list[0]) {
-                expect("net.pwall.yaml.YAMLSimple") { name }
-                expect(Level.DEBUG) { level }
-                expect("Parse complete; result is null") { message }
+                name shouldBe "net.pwall.yaml.YAMLSimple"
+                level shouldBe Level.DEBUG
+                message shouldBe "Parse complete; result is null"
             }
         }
     }

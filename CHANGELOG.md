@@ -2,6 +2,12 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [1.19] - 2025-01-26
+### Changed
+- `pom.xml`: updated Kotlin version to 2.0.21
+- `pom.xml`: updated dependency version
+- tests: converted to `should-test` library
+
 ## [1.18] - 2024-08-08
 ### Added
 - `build.yml`, `deploy.yml`: converted project to GitHub Actions
